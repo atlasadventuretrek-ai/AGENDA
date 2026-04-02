@@ -207,6 +207,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .empty-txt{font-family:var(--mono);font-size:11px}
 
 /* ── SCROLLBAR ── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
@@ -272,6 +273,10 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       <div class="ni" onclick="nav('settings')"><span class="ni-ico">⚙</span>Paramètres</div>
     </div>
     <div class="sb-foot" id="sb-date"></div>
+    <div id="sync-indicator" style="display:none;align-items:center;gap:6px;padding:8px 16px;background:var(--abg);border-top:1px solid var(--amber)">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--amber2);animation:pulse 1s infinite"></div>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--amber2)">Synchronisation...</span>
+    </div>
   </div>
 
   <!-- MAIN -->
@@ -548,23 +553,118 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 
 <script>
 // ═══════════════════════════════════════════════
+//  CONFIG GOOGLE SHEETS
+// ═══════════════════════════════════════════════
+const SHEET_ID   = '1QUiJzYdRnglohY8UT9qW0qwl0PC3WuHHSUJf42osGFc';
+const API_KEY    = 'AIzaSyDvq9rBc_QV-aV8ElrvY3D2ZQ5bhqortA8';
+const TAB        = 'Clients';
+const PWD_KEY    = 'gm_pwd_v2';
+const COLS = ['id','name','phone','channel','channelOther','type','dest','startDate','endDate',
+  'flightIn','flightOut','arrivalTime','departTime','transferIn','transferOut','hotel',
+  'guide','guidePhone','driver','driverPhone','price','currency','advance','advanceAmount',
+  'advanceDate','invoiceNo','status','pax','comments','country','createdAt'];
+
+// ═══════════════════════════════════════════════
 //  DATA & STORAGE
 // ═══════════════════════════════════════════════
-const STORAGE_KEY = 'gm_crm_v2';
-const PWD_KEY     = 'gm_pwd';
 let DB = [];
 let currentId = null;
 let currentFilter = 'all';
 let sortField = 'startDate';
 let sortAsc = true;
+let _syncing = false;
 
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)) }
-function load(){
-  try{ DB = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]') }catch(e){ DB=[] }
-}
 function getPwd(){ return localStorage.getItem(PWD_KEY)||'marokko2024' }
-
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2) }
+
+// ── SHEETS HELPERS ──
+async function sheetsFetch(range){
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`;
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('GET '+r.status);
+  return r.json();
+}
+async function sheetsWrite(range, values){
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=RAW&key=${API_KEY}`;
+  const r=await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values})});
+  if(!r.ok){const t=await r.text();throw new Error('PUT '+r.status+' '+t);}
+  return r.json();
+}
+async function sheetsAppend(values){
+  const range=TAB+'!A:AZ';
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS&key=${API_KEY}`;
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values})});
+  if(!r.ok){const t=await r.text();throw new Error('APPEND '+r.status+' '+t);}
+  return r.json();
+}
+async function sheetsClear(range){
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:clear?key=${API_KEY}`;
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'}});
+  if(!r.ok) throw new Error('CLEAR '+r.status);
+  return r.json();
+}
+
+// Convert DB object to row array
+function objToRow(c){ return COLS.map(k=>c[k]||'')}
+// Convert row array to DB object
+function rowToObj(row){ const o={}; COLS.forEach((k,i)=>o[k]=row[i]||''); return o; }
+
+// ── ENSURE HEADER ROW ──
+async function ensureHeaders(){
+  try{
+    const d=await sheetsFetch(TAB+'!A1:AZ1');
+    const existing=(d.values&&d.values[0])||[];
+    if(existing[0]!=='id'){
+      await sheetsWrite(TAB+'!A1',[ COLS ]);
+    }
+  }catch(e){ console.warn('ensureHeaders:',e); }
+}
+
+// ── LOAD FROM SHEETS ──
+async function load(){
+  showSyncIndicator(true);
+  try{
+    await ensureHeaders();
+    const d=await sheetsFetch(TAB+'!A:AZ');
+    const rows=(d.values||[]).slice(1); // skip header
+    DB=rows.filter(r=>r[0]).map(rowToObj);
+    // cache locally as fallback
+    localStorage.setItem('gm_cache',JSON.stringify(DB));
+  }catch(e){
+    console.warn('Sheets load failed, using cache:',e);
+    try{ DB=JSON.parse(localStorage.getItem('gm_cache')||'[]'); }catch(e2){ DB=[]; }
+    toast('Mode hors-ligne — données depuis le cache','info');
+  }
+  showSyncIndicator(false);
+}
+
+// ── SAVE FULL DB TO SHEETS ──
+async function save(){
+  if(_syncing) return;
+  _syncing=true;
+  showSyncIndicator(true);
+  // cache locally immediately
+  localStorage.setItem('gm_cache',JSON.stringify(DB));
+  try{
+    await ensureHeaders();
+    // Clear data rows (keep header)
+    await sheetsClear(TAB+'!A2:AZ10000');
+    if(DB.length>0){
+      const rows=DB.map(objToRow);
+      await sheetsAppend(rows);
+    }
+  }catch(e){
+    console.warn('Sheets save failed:',e);
+    toast('Erreur sync — données sauvegardées localement','error');
+  }
+  _syncing=false;
+  showSyncIndicator(false);
+}
+
+function showSyncIndicator(on){
+  const el=document.getElementById('sync-indicator');
+  if(el) el.style.display=on?'flex':'none';
+}
 
 // ═══════════════════════════════════════════════
 //  LOCK / UNLOCK
@@ -574,7 +674,7 @@ function unlock(){
   if(v === getPwd()){
     document.getElementById('lock').style.display='none';
     document.getElementById('app').style.display='flex';
-    load(); init();
+    init();
   } else {
     document.getElementById('lk-err').style.display='block';
     document.getElementById('lk-input').value='';
@@ -594,11 +694,15 @@ function changePwd(){
 // ═══════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════
-function init(){
+async function init(){
   updateDate();
   populateExportSelects();
+  showSyncIndicator(true);
+  await load();
   renderAll();
   setInterval(updateDate, 60000);
+  // Auto-refresh every 30 seconds
+  setInterval(async()=>{ await load(); renderAll(); }, 30000);
 }
 function updateDate(){
   const now = new Date();
@@ -847,9 +951,9 @@ function renderDashboard(){
   }
 }
 
-function quickConfirm(id){
+async function quickConfirm(id){
   const c = DB.find(x=>x.id===id);
-  if(c){ c.status='confirmed'; save(); renderAll(); toast('Client confirmé','success'); }
+  if(c){ c.status='confirmed'; renderAll(); await save(); toast('Client confirmé','success'); }
 }
 
 // ═══════════════════════════════════════════════
@@ -1093,7 +1197,7 @@ function fillForm(c){
   document.getElementById('f-comments').value=c.comments||'';
   detectCountry();
 }
-function saveClient(){
+async function saveClient(){
   const name=document.getElementById('f-name').value.trim();
   const phone=document.getElementById('f-phone').value.trim();
   if(!name){ toast('Le nom est obligatoire','error'); return; }
@@ -1131,20 +1235,23 @@ function saveClient(){
   };
   if(currentId){ const i=DB.findIndex(x=>x.id===currentId); DB[i]=c; }
   else { DB.push(c); }
-  save(); renderAll();
+  renderAll();
   closeModal('ov-client');
-  toast(currentId?'Client mis à jour':'Client ajouté','success');
+  toast(currentId?'Client mis à jour — sync...':'Client ajouté — sync...','info');
   currentId=null;
+  await save();
+  toast('Sauvegardé dans Google Sheets','success');
 }
-function deleteClient(){
+async function deleteClient(){
   if(!currentId) return;
   const c=DB.find(x=>x.id===currentId);
   if(!confirm(`Supprimer le dossier de ${c?.name} ?`)) return;
   DB=DB.filter(x=>x.id!==currentId);
-  save(); renderAll();
+  renderAll();
   closeModal('ov-detail');
-  toast('Dossier supprimé','info');
   currentId=null;
+  await save();
+  toast('Dossier supprimé','info');
 }
 
 // ═══════════════════════════════════════════════
@@ -1284,15 +1391,15 @@ function genInvoice(c){
   doc.setFontSize(9);doc.setTextColor(120,110,90);doc.setFont('helvetica','bold');
   doc.text('BILL TO',16,y+6);
   doc.setFontSize(11);doc.setTextColor(30,30,30);
-  doc.text(c.name,16,y+13);
+  doc.text(pdfSafe(c.name),16,y+13);
   doc.setFontSize(9);doc.setTextColor(100,100,100);doc.setFont('helvetica','normal');
-  doc.text(c.phone||'',16,y+19);
+  doc.text(pdfSafe(c.phone||''),16,y+19);
   const today2=new Date().toLocaleDateString('en-GB');
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(120,110,90);
   doc.text('DATE',160,y+6);doc.text('STATUS',160,y+13);
   doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);
   doc.text(today2,160,y+10);
-  doc.setTextColor(c.status==='confirmed'?[40,120,60]:[180,100,0]);
+  if(c.status==='confirmed'){doc.setTextColor(40,120,60);}else{doc.setTextColor(180,100,0);}
   doc.text(c.status.toUpperCase(),160,y+17);
   y+=30;
 
@@ -1516,7 +1623,7 @@ function genWelcomeCard(c){
 
   // Client name — big
   doc.setFontSize(22);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-  const name=c.name.length>24?c.name.slice(0,22)+'…':c.name;
+  const name=pdfSafe(c.name.length>24?c.name.slice(0,22)+'...':c.name);
   doc.text(name, W/2, 34, {align:'center'});
 
   // Divider
@@ -1638,8 +1745,8 @@ function exportMonthlyPDF(){
 
   // TABLE
   const rows=clients.map((c,i)=>{
-    const straddle=(c.startDate&&new Date(c.startDate)<new Date(y,m,1))?' ◄':'';
-    const straddleEnd=(c.endDate&&new Date(c.endDate)>new Date(y,m+1,0))?' ►':'';
+    const straddle=(c.startDate&&new Date(c.startDate)<new Date(y,m,1))?' [<]':'';
+    const straddleEnd=(c.endDate&&new Date(c.endDate)>new Date(y,m+1,0))?' [>]':'';
     return [
       i+1,
       c.name+(c.pax&&c.pax>1?' ('+c.pax+')':''),
@@ -1690,7 +1797,7 @@ function exportMonthlyPDF(){
   // Straddle legend
   const legendY=doc.lastAutoTable.finalY+6;
   doc.setFontSize(7);doc.setFont('helvetica','italic');doc.setTextColor(160,150,120);
-  doc.text('◄ Departure before the month  ► Return after the month',14,legendY);
+  doc.text('<-- Departure before month    --> Return after month',14,legendY);
 
   pdfFooter(doc,showSite,true);
   doc.save(`Report_${months[m]}_${y}.pdf`);
@@ -1700,33 +1807,54 @@ function exportMonthlyPDF(){
 // ═══════════════════════════════════════════════
 //  PDF HELPERS
 // ═══════════════════════════════════════════════
+
+// Safe text: transliterate cyrillic to latin for jsPDF compatibility
+function pdfText(s){
+  if(!s) return '—';
+  const map={
+    'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i',
+    'й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t',
+    'у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'',
+    'э':'e','ю':'yu','я':'ya',
+    'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I',
+    'Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T',
+    'У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch','Ъ':'','Ы':'Y','Ь':'',
+    'Э':'E','Ю':'Yu','Я':'Ya',
+  };
+  return String(s).split('').map(c=>map[c]!==undefined?map[c]:c).join('');
+}
+
+// Strip special unicode symbols that jsPDF can't render
+function pdfSafe(s){
+  return pdfText(String(s||'')).replace(/[^\x00-\x7F\u00C0-\u024F]/g,'?');
+}
+
 function pdfHeader(doc, title, ref, showSite=true, landscape=false){
   const W=landscape?297:210;
-  // Gold header bar
   doc.setFillColor(200,168,75); doc.rect(0,0,W,28,'F');
   doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
   doc.text('GUID MAROKKO',14,12);
   doc.setFontSize(8);doc.setFont('helvetica','normal');
   if(showSite) doc.text('guid-marokko.com',14,18);
   doc.text('+212 696 643 573',14,22);
-  // Title right
   doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(30,25,10);
-  doc.text(title,W-14,16,{align:'right'});
-  if(ref){ doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(80,70,50);doc.text('Ref: '+ref,W-14,22,{align:'right'}); }
-  // Thin separator
+  doc.text(pdfSafe(title),W-14,16,{align:'right'});
+  if(ref){ doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(80,70,50);doc.text('Ref: '+pdfSafe(ref),W-14,22,{align:'right'}); }
   doc.setFillColor(180,148,55);doc.rect(0,28,W,1.5,'F');
 }
+
 function pdfFooter(doc, showSite=true, landscape=false){
   const W=landscape?297:210;
   const H=landscape?210:297;
   doc.setFillColor(30,25,20);doc.rect(0,H-14,W,14,'F');
   doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(160,150,120);
-  doc.text('GUID MAROKKO — VIP Private Tours Morocco',14,H-8);
+  doc.text('GUID MAROKKO -- VIP Private Tours Morocco',14,H-8);
   doc.text('+212 696 643 573',14,H-4);
   if(showSite){doc.setTextColor(200,168,75);doc.text('guid-marokko.com',W/2,H-6,{align:'center'});}
   doc.setTextColor(100,90,80);
   doc.text('Generated '+new Date().toLocaleDateString('en-GB'),W-14,H-6,{align:'right'});
 }
+
 function pdfSection(doc, title, rows, y){
   doc.setFillColor(240,238,232);doc.roundedRect(14,y,182,7,1,1,'F');
   doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(100,80,40);
@@ -1736,13 +1864,15 @@ function pdfSection(doc, title, rows, y){
     doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(100,90,80);
     doc.text(k+':',16,y);
     doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);
-    const lines=doc.splitTextToSize(String(v||'—'),130);
+    const safe=pdfSafe(String(v||'—'));
+    const lines=doc.splitTextToSize(safe,130);
     doc.text(lines,70,y);
     y+=lines.length>1?lines.length*5+1:6;
     if(y>270){doc.addPage();y=20;}
   });
   return y+4;
 }
+
 function safeName(n){ return (n||'client').replace(/[^a-zA-Z0-9_\-]/g,'_').slice(0,30); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -1783,7 +1913,7 @@ function importData(e){
     try{
       const data=JSON.parse(ev.target.result);
       if(!Array.isArray(data)) throw new Error('Invalid format');
-      DB=data; save(); renderAll();
+      DB=data; renderAll(); save();
       toast(data.length+' clients importés','success');
     }catch(err){ toast('Erreur import JSON','error'); }
   };
