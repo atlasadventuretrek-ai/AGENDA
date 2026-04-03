@@ -552,7 +552,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 //  CONFIG
 // ══════════════════════════════════════════
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwuo5HMCQAttLDgKQ2lQll_lLUo8RgX2THrsQavhewbWKpyb0jIVZ2KM7rFU66DWnwI/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfIUSeanQE5iQj_pbCXa80wbv-TwA0k8P9gPRtofMAXb6novWs2yWxDem3wvSxh8lS/exec';
 const PWD_KEY = 'gm_pwd_v3';
 const COLS = ['id','name','phone','channel','channelOther','type','dest','startDate','endDate',
   'flightIn','flightOut','arrivalTime','departTime','transferIn','transferOut','hotel',
@@ -1411,10 +1411,9 @@ function renderHistory() {
         <td style="font-weight:bold; color:var(--green)">${c.price || 0} ${c.currency}</td>
         <td><span class="badge b-confirmed">ACHEVÉ ✅</span></td>
         <td><button class="btn btn-ghost btn-sm" onclick="openDetail('${c.id}')">👁 Voir</button></td>
-    </tr>
+      </tr>
     `).join('');
-}
-
+}  
 </script>
 </body>
 </html>
