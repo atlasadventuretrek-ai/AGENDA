@@ -260,7 +260,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 </head>
 <body>
 
-<!-- LOCK -->
 <div id="lock">
   <div>
     <div class="lk-logo">Guid Marokko</div>
@@ -270,22 +269,22 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
     <input class="lk-in" type="password" id="lk-input" placeholder="••••••" onkeydown="if(event.key==='Enter')unlock()">
     <button class="lk-btn" onclick="unlock()">Accéder →</button>
     <div class="lk-err" id="lk-err">Mot de passe incorrect</div>
-    <div class="lk-hint">Mot de passe par défaut : marokko2024<br>Modifiable dans Paramètres</div>
+    <div class="lk-hint">Mot de passe par défaut : <br>Modifiable dans Paramètres</div>
   </div>
 </div>
 
-<!-- APP -->
 <div class="app" id="app" style="display:none">
   <div class="sidebar">
     <div class="logo">
       <div class="logo-t">Guid Marokko</div>
       <div class="logo-s">CRM · Agence VIP</div>
-    </div>
     <div class="nav">
       <div class="ni active" onclick="nav('dashboard')"><span class="ni-ico">⬡</span>Dashboard<span class="nbadge amber" id="nb-alerts">0</span></div>
+      <div class="ni" onclick="nav('calendar')"><span class="ni-ico">📅</span>Calendrier</div>
       <div class="ni" onclick="nav('clients')"><span class="ni-ico">◈</span>Clients<span class="nbadge gold" id="nb-clients">0</span></div>
       <div class="ni" onclick="nav('pending')"><span class="ni-ico">◎</span>En attente<span class="nbadge red" id="nb-pending">0</span></div>
       <div class="ni" onclick="nav('upcoming')"><span class="ni-ico">◷</span>À venir<span class="nbadge green" id="nb-upcoming">0</span></div>
+      <div class="ni" onclick="nav('history')"><span class="ni-ico">📜</span>Historique</div>
       <div class="ni" onclick="nav('cancelled')"><span class="ni-ico">◌</span>Annulés</div>
       <div class="ni" onclick="nav('analytics')"><span class="ni-ico">▦</span>Analyses</div>
       <div class="ni" onclick="nav('export')"><span class="ni-ico">↓</span>Export PDF</div>
@@ -297,7 +296,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 
   <div class="main">
 
-    <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <div class="topbar">
         <div><div class="pg-title">Tableau de bord</div><div class="pg-sub" id="dash-date"></div></div>
@@ -314,7 +312,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       <div class="card"><div class="card-t">⏳ En attente — à contacter</div><div id="dash-pending"></div></div>
     </div>
 
-    <!-- CLIENTS -->
     <div class="page" id="page-clients">
       <div class="topbar">
         <div><div class="pg-title">Clients</div><div class="pg-sub">Tous les dossiers</div></div>
@@ -337,7 +334,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </tr></thead><tbody id="clients-tbody"></tbody></table></div>
     </div>
 
-    <!-- EN ATTENTE -->
     <div class="page" id="page-pending">
       <div class="topbar">
         <div><div class="pg-title">En attente</div><div class="pg-sub">À confirmer</div></div>
@@ -348,7 +344,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </tr></thead><tbody id="pending-tbody"></tbody></table></div>
     </div>
 
-    <!-- À VENIR -->
     <div class="page" id="page-upcoming">
       <div class="topbar"><div><div class="pg-title">À venir</div><div class="pg-sub">Confirmés — départs à venir</div></div></div>
       <div class="tbl-wrap"><table><thead><tr>
@@ -356,15 +351,39 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </tr></thead><tbody id="upcoming-tbody"></tbody></table></div>
     </div>
 
-    <!-- ANNULÉS -->
     <div class="page" id="page-cancelled">
       <div class="topbar"><div><div class="pg-title">Annulés</div><div class="pg-sub">Dossiers annulés</div></div></div>
       <div class="tbl-wrap"><table><thead><tr>
         <th>Client</th><th>Tél</th><th>Type</th><th>Départ prévu</th><th>Avance</th><th>Note</th><th>Actions</th>
       </tr></thead><tbody id="cancelled-tbody"></tbody></table></div>
+</div> <div class="page" id="page-calendar">
+      <div class="topbar">
+        <div><div class="pg-title">Calendrier Mensuel</div><div class="pg-sub">Vue globale de vos missions</div></div>
+        <div class="topbar-r">
+          <button class="btn btn-ghost btn-sm" onclick="changeCalMonth(-1)">◀ Précédent</button>
+          <button class="btn btn-ghost btn-sm" onclick="changeCalMonth(1)">Suivant ▶</button>
+        </div>
+      </div>
+      <div id="calendar-container" class="card" style="padding:0; overflow:hidden;">
+        </div>
     </div>
 
-    <!-- ANALYSES -->
+    <div class="page" id="page-history">
+      <div class="topbar">
+        <div><div class="pg-title">Historique</div><div class="pg-sub">Dossiers achevés et payés</div></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th><th>Tél</th><th>Type</th><th>Départ</th><th>Prix</th><th>Statut</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="page" id="page-analytics">
       <div class="topbar"><div><div class="pg-title">Analyses</div><div class="pg-sub">Statistiques globales</div></div></div>
       <div class="stats-row" id="analytics-stats"></div>
@@ -376,7 +395,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </div>
     </div>
 
-    <!-- EXPORT PDF -->
     <div class="page" id="page-export">
       <div class="topbar"><div><div class="pg-title">Export PDF mensuel</div><div class="pg-sub">Rapport par période</div></div></div>
       <div class="card" style="max-width:480px">
@@ -397,7 +415,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </div>
     </div>
 
-    <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <div class="topbar"><div><div class="pg-title">Paramètres</div></div></div>
       <div style="display:grid;gap:14px;max-width:480px">
@@ -425,7 +442,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
   </div>
 </div>
 
-<!-- MODAL CLIENT -->
 <div class="ov" id="ov-client">
 <div class="modal">
   <div class="modal-hd"><span id="modal-title">Nouveau client</span><div class="mx" onclick="closeModal('ov-client')">✕</div></div>
@@ -496,7 +512,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 </div>
 </div>
 
-<!-- MODAL DETAIL -->
 <div class="ov" id="ov-detail">
 <div class="modal" style="max-width:720px">
   <div class="modal-hd"><span id="det-title">Dossier client</span><div class="mx" onclick="closeModal('ov-detail')">✕</div></div>
@@ -519,7 +534,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 </div>
 </div>
 
-<!-- MODAL PDF OPTIONS -->
 <div class="ov" id="ov-pdf">
 <div class="modal" style="max-width:420px">
   <div class="modal-hd"><span id="pdf-modal-title">Options PDF</span><div class="mx" onclick="closeModal('ov-pdf')">✕</div></div>
@@ -537,6 +551,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 // ══════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════
+
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYGRW65V0XYFHc98FuovQGgjZ1nnaOhnUbpLyOySgZQx89DbcKGDugyLroDfimZMst/exec';
 const PWD_KEY = 'gm_pwd_v3';
 const COLS = ['id','name','phone','channel','channelOther','type','dest','startDate','endDate',
@@ -557,7 +572,7 @@ let _syncing = false;
 // ══════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════
-function getPwd(){ return localStorage.getItem(PWD_KEY)||'marokko2024' }
+function getPwd(){ return localStorage.getItem(PWD_KEY)||'AZERTY' }
 function unlock(){
   if(document.getElementById('lk-input').value===getPwd()){
     document.getElementById('lock').style.display='none';
@@ -583,16 +598,7 @@ function changePwd(){
 // ══════════════════════════════════════════
 //  GOOGLE APPS SCRIPT SYNC
 // ══════════════════════════════════════════
-function objToRow(c){
-  return COLS.map(k=>{
-    let v = c[k]||'';
-    // Clean ISO dates to YYYY-MM-DD
-    if(typeof v === 'string' && v.includes('T') && v.includes('Z')){
-      try{ v = new Date(v).toISOString().slice(0,10); }catch(e){}
-    }
-    return String(v);
-  });
-}
+function objToRow(c){ return COLS.map(k=>String(c[k]||'')) }
 function rowToObj(row){ const o={}; COLS.forEach((k,i)=>o[k]=row[i]||''); return o; }
 
 function showSync(on){
@@ -603,90 +609,82 @@ function showSync(on){
 async function load(){
   showSync(true);
   return new Promise((resolve)=>{
-    const cbName = 'gm_cb_'+Date.now();
+    const cbName = 'cb_'+Date.now();
     const script = document.createElement('script');
     window[cbName] = function(d){
       try{
-        if(d.ok && d.values && d.values.length>1){
+        if(d.ok && d.values){
           const rows = d.values.slice(1).filter(r=>r[0]);
           DB = rows.map(rowToObj);
-          // Fix date format: remove time part from ISO dates
-          DB.forEach(c=>{
-            ['startDate','endDate','advanceDate'].forEach(k=>{
-              if(c[k] && c[k].includes('T')){
-                // Convert ISO to YYYY-MM-DD, adjust for timezone
-                const d = new Date(c[k]);
-                c[k] = d.toISOString().slice(0,10);
-              }
-            });
-          });
           localStorage.setItem('gm_cache_v3', JSON.stringify(DB));
         } else {
-          const cached = localStorage.getItem('gm_cache_v3');
-          DB = cached ? JSON.parse(cached) : [];
+          DB = JSON.parse(localStorage.getItem('gm_cache_v3')||'[]');
         }
-      }catch(e){
-        console.warn('JSONP parse error:', e);
-        const cached = localStorage.getItem('gm_cache_v3');
-        DB = cached ? JSON.parse(cached) : [];
-      }
+      }catch(e){ DB = JSON.parse(localStorage.getItem('gm_cache_v3')||'[]'); }
       delete window[cbName];
-      try{document.body.removeChild(script);}catch(e){}
+      document.body.removeChild(script);
       showSync(false);
       resolve();
     };
     script.onerror = function(){
-      console.warn('JSONP script error');
-      const cached = localStorage.getItem('gm_cache_v3');
-      DB = cached ? JSON.parse(cached) : [];
-      if(DB.length) toast('Mode cache — '+DB.length+' clients','info');
+      DB = JSON.parse(localStorage.getItem('gm_cache_v3')||'[]');
+      toast('Mode cache — '+DB.length+' clients','info');
       delete window[cbName];
       try{document.body.removeChild(script);}catch(e){}
       showSync(false);
       resolve();
     };
-    script.src = APPS_SCRIPT_URL+'?callback='+cbName+'&t='+Date.now();
+    script.src = APPS_SCRIPT_URL + '?callback='+cbName+'&t='+Date.now();
     document.body.appendChild(script);
-    // Timeout after 10s
-    setTimeout(()=>{
-      if(window[cbName]){
-        window[cbName]({ok:false, values:[]});
-      }
-    }, 10000);
+    setTimeout(()=>{ if(window[cbName]){ window[cbName]({ok:false}); } }, 8000);
   });
 }
-
 
 async function save(){
   if(_syncing) return;
   _syncing = true;
   showSync(true);
-  // Always save to cache immediately
   localStorage.setItem('gm_cache_v3', JSON.stringify(DB));
   try{
     const headers = COLS;
     const rows = DB.map(objToRow);
-    const body = JSON.stringify({action:'save', headers, rows});
     const r = await fetch(APPS_SCRIPT_URL, {
-      method:'POST',
-      body: body
+      method: 'POST',
+      body: JSON.stringify({ action:'save', headers, rows })
     });
     const text = await r.text();
-    let d;
-    try{ d=JSON.parse(text); }catch(e){ d={ok:false}; }
-    if(d.ok){
-      toast('Sauvegardé dans Google Sheets ✓','success');
-    } else {
-      throw new Error(d.error||'error');
-    }
-  }catch(e){
-    console.warn('Save to Sheets failed:', e);
-    toast('Sauvegardé localement (sync au prochain chargement)','info');
+    const d = JSON.parse(text);
+    if(!d.ok) throw new Error(d.error||'Save failed');
+    toast('Sauvegardé ✓','success');
+  } catch(e){
+    toast('Données sauvegardées localement','info');
   }
   _syncing = false;
   showSync(false);
 }
 
+async function save(){
+  if(_syncing) return;
+  _syncing = true;
+  showSync(true);
+  localStorage.setItem('gm_cache_v3', JSON.stringify(DB));
+  try{
+    const headers = COLS;
+    const rows = DB.map(objToRow);
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action:'save', headers, rows })
+    });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Save failed');
+    toast('Sauvegardé ✓','success');
+  } catch(e){
+    console.warn('Save failed:', e);
+    toast('Sauvegarde locale uniquement','error');
+  }
+  _syncing = false;
+  showSync(false);
+}
 
 // ══════════════════════════════════════════
 //  INIT
@@ -714,8 +712,16 @@ function updateDate(){
 }
 
 function renderAll(){
-  renderDashboard(); renderClients(); renderPending();
-  renderUpcoming(); renderCancelled(); updateBadges(); updateExportPreview();
+  renderDashboard(); 
+  renderClients(); 
+  renderPending();
+  renderUpcoming(); 
+  renderCancelled(); 
+  updateBadges(); 
+  updateExportPreview();
+  // INDISPENSABLE pour que tes nouvelles pages ne soient pas vides
+  renderCalendar(); 
+  renderHistory();
 }
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2) }
@@ -724,13 +730,25 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 //  NAV
 // ══════════════════════════════════════════
 function nav(id){
+  // 1. On cache toutes les pages et on désactive les boutons du menu
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
+  
+  // 2. On affiche la page demandée
+  const targetPage = document.getElementById('page-'+id);
+  if(targetPage) targetPage.classList.add('active');
+
+  // 3. LOGIQUE CRUCIALE : On lance le remplissage des données selon l'onglet
+  if(id === 'calendar') renderCalendar();
+  if(id === 'history') renderHistory();
+  if(id === 'analytics') renderAnalytics();
+
+  // 4. On met en surbrillance le bouton cliqué dans le menu
   document.querySelectorAll('.ni').forEach(ni=>{
-    if(ni.getAttribute('onclick')===`nav('${id}')`){ ni.classList.add('active'); }
+    if(ni.getAttribute('onclick')===`nav('${id}')` || ni.getAttribute('onclick')===`nav("${id}")`){ 
+      ni.classList.add('active'); 
+    }
   });
-  if(id==='analytics') renderAnalytics();
 }
 
 // ══════════════════════════════════════════
@@ -992,7 +1010,7 @@ function openDetail(id){
 //  PDF HELPERS
 // ══════════════════════════════════════════
 function pdfText(s){
-  const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya','А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya'};
+  const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya','А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','S':'S','T':'T','U':'U','F':'F','Kh':'Kh','Ts':'Ts','Ch':'Ch','Sh':'Sh','Sch':'Sch','Ъ':'','Y':'Y','Ь':'','E':'E','Yu':'Yu','Ya':'Ya'};
   return String(s||'').split('').map(c=>map[c]!==undefined?map[c]:c).join('');
 }
 function pdfSafe(s){ return pdfText(String(s||'')).replace(/[^\x00-\x7F\u00C0-\u024F]/g,'?') }
@@ -1340,6 +1358,74 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape') document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
   if((e.ctrlKey||e.metaKey)&&e.key==='n'&&document.getElementById('app').style.display!=='none'){e.preventDefault();openNewClient();}
 });
+  // --- LOGIQUE CALENDRIER ---
+let calViewDate = new Date();
+
+function changeCalMonth(dir) {
+  calViewDate.setMonth(calViewDate.getMonth() + dir);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const container = document.getElementById('calendar-container');
+  if (!container) return;
+  
+  const year = calViewDate.getFullYear();
+  const month = calViewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Ajustement Lundi
+
+  // Affichage du mois et de l'année dans le sous-titre
+  const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  const subTitle = document.querySelector('#page-calendar .pg-sub');
+  if(subTitle) subTitle.textContent = monthNames[month] + " " + year;
+
+  let html = `<div style="display:grid; grid-template-columns:repeat(7, 1fr); background:var(--bd); gap:1px; border:1px solid var(--bd);">`;
+  
+  ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d => {
+    html += `<div style="background:var(--s3); padding:10px; font-size:10px; font-weight:bold; text-align:center;">${d}</div>`;
+  });
+
+  for (let i = 0; i < startOffset; i++) html += `<div style="background:var(--s2); min-height:100px;"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const clients = DB.filter(c => c.startDate === dateStr && c.status !== 'cancelled' && c.status !== 'completed');
+    
+    html += `<div style="padding:5px; background:white; min-height:100px; border-bottom:1px solid var(--s3); overflow-y:auto;">
+      <div style="font-family:var(--mono); font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--tx3);">${d}</div>
+      ${clients.map(c => `
+        <div style="font-size:9px; padding:3px 5px; margin-top:2px; background:var(--goldbg); color:var(--gold); border-left:3px solid var(--gold); border-radius:2px; cursor:pointer; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" 
+             onclick="openDetail('${c.id}')" title="${esc(c.name)}">
+          ${esc(c.name)}
+        </div>
+      `).join('')}
+    </div>`;
+  }
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// --- LOGIQUE HISTORIQUE ---
+function renderHistory() {
+  const data = DB.filter(c => c.status === 'completed');
+  const tb = document.getElementById('history-tbody');
+  if (!tb) return;
+  
+  tb.innerHTML = !data.length ? `<tr><td colspan="7"><div class="empty"><div class="empty-txt">Aucun dossier dans l'historique</div></div></td></tr>` :
+    data.map(c => `
+      <tr>
+        <td class="td-name">${esc(c.name)}</td>
+        <td><span style="font-family:var(--mono); font-size:11px">${esc(c.phone)}</span></td>
+        <td>${tLbl(c.type)}</td>
+        <td>${fmtDate(c.startDate)}</td>
+        <td style="font-weight:bold; color:var(--green)">${c.price || 0} ${c.currency}</td>
+        <td><span class="badge b-confirmed">ACHEVÉ ✅</span></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="openDetail('${c.id}')">👁 Voir</button></td>
+      </tr>
+    `).join('');
+}  
 </script>
 </body>
 </html>
