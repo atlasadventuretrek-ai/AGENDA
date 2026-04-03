@@ -872,10 +872,32 @@ function renderDash(){
     ac.map(c=>{ const d=daysUntil(c.startDate); return `<div class="al-item ${d<=2?'al-urgent':'al-soon'}" onclick="openDet('${c.id}')"><div class="al-dot ${d<=2?'dot-r':'dot-a'}"></div><div><div class="al-name">${esc(c.name)}</div><div class="al-det">${d===0?"Aujourd'hui !":d===1?'Demain':d+'j'} · ${tLbl(c.type)}${c.dest?' · '+esc(c.dest):''} · ${sBadge(c.status)}</div></div></div>`; }).join('');
 
   // Upcoming
-  const uc=DB.filter(c=>c.status==='confirmed'&&daysUntil(c.startDate)>=0).sort((a,b)=>new Date(cleanDate(a.startDate))-new Date(cleanDate(b.startDate))).slice(0,6);
-  document.getElementById('dash-upcoming').innerHTML=!uc.length?'<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun départ prévu</div></div>':
-    uc.map(c=>{ const dt=new Date(cleanDate(c.startDate)+'T12:00:00'); return `<div class="up-item" onclick="openDet('${c.id}')"><div class="up-date"><div class="up-day">${dt.getDate()}</div><div class="up-month">${mName(dt.getMonth())}</div></div><div class="up-info"><div class="up-name">${esc(c.name)}</div><div class="up-sub">${tLbl(c.type)}${c.dest?' · '+esc(c.dest):''}${c.guide?' · 👤'+esc(c.guide):''}</div></div><div>${daysChip(c.startDate)}</div></div>`; }).join('');
+ const uc = DB.filter(c => c.status === 'confirmed' && daysUntil(c.startDate) >= 0)
+   .sort((a, b) => cleanDate(a.startDate).localeCompare(cleanDate(b.startDate)))
+   .slice(0, 6);
 
+ document.getElementById('dash-upcoming').innerHTML = !uc.length ? 
+   '<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun départ prévu</div></div>' :
+   uc.map(c => {
+     // SOLUTION : On découpe le texte "2026-05-10" directement
+     const parts = cleanDate(c.startDate).split('-');
+     const dayNum = parts[2]; // Récupère strictement le "10"
+     const monthIdx = parseInt(parts[1]) - 1; // Index 0-11
+     const monthLabel = mName(monthIdx); // Récupère "MAI"
+
+     return `
+       <div class="up-item" onclick="openDet('${c.id}')">
+         <div class="up-date">
+           <div class="up-day">${dayNum}</div>
+           <div class="up-month">${monthLabel}</div>
+         </div>
+         <div class="up-info">
+           <div class="up-name">${esc(c.name)}</div>
+           <div class="up-sub">${tLbl(c.type)}${c.dest ? ' · ' + esc(c.dest) : ''}${c.guide ? ' · 👤' + esc(c.guide) : ''}</div>
+         </div>
+         <div>${daysChip(c.startDate)}</div>
+       </div>`;
+   }).join('');
   // Pending
   const pc=DB.filter(c=>c.status==='pending').sort((a,b)=>{ const da=daysUntil(a.startDate),db=daysUntil(b.startDate); if(da===null&&db===null) return 0; if(da===null) return 1; if(db===null) return -1; return da-db; });
   document.getElementById('dash-pending').innerHTML=!pc.length?'<div class="empty"><div class="empty-ico">◎</div><div class="empty-txt">Aucun dossier en attente</div></div>':
