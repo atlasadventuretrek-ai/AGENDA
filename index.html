@@ -686,13 +686,25 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 //  NAV
 // ══════════════════════════════════════════
 function nav(id){
+  // 1. On cache toutes les pages et on désactive les boutons du menu
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
+  
+  // 2. On affiche la page demandée
+  const targetPage = document.getElementById('page-'+id);
+  if(targetPage) targetPage.classList.add('active');
+
+  // 3. LOGIQUE CRUCIALE : On lance le remplissage des données selon l'onglet
+  if(id === 'calendar') renderCalendar();
+  if(id === 'history') renderHistory();
+  if(id === 'analytics') renderAnalytics();
+
+  // 4. On met en surbrillance le bouton cliqué dans le menu
   document.querySelectorAll('.ni').forEach(ni=>{
-    if(ni.getAttribute('onclick')===`nav('${id}')`){ ni.classList.add('active'); }
+    if(ni.getAttribute('onclick')===`nav('${id}')` || ni.getAttribute('onclick')===`nav("${id}")`){ 
+      ni.classList.add('active'); 
+    }
   });
-  if(id==='analytics') renderAnalytics();
 }
 
 // ══════════════════════════════════════════
@@ -1302,6 +1314,74 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape') document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
   if((e.ctrlKey||e.metaKey)&&e.key==='n'&&document.getElementById('app').style.display!=='none'){e.preventDefault();openNewClient();}
 });
+  // --- LOGIQUE CALENDRIER ---
+let calViewDate = new Date();
+
+function changeCalMonth(dir) {
+  calViewDate.setMonth(calViewDate.getMonth() + dir);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const container = document.getElementById('calendar-container');
+  if (!container) return;
+  
+  const year = calViewDate.getFullYear();
+  const month = calViewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Ajustement Lundi
+
+  // Affichage du mois et de l'année dans le sous-titre
+  const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  const subTitle = document.querySelector('#page-calendar .pg-sub');
+  if(subTitle) subTitle.textContent = monthNames[month] + " " + year;
+
+  let html = `<div style="display:grid; grid-template-columns:repeat(7, 1fr); background:var(--bd); gap:1px; border:1px solid var(--bd);">`;
+  
+  ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d => {
+    html += `<div style="background:var(--s3); padding:10px; font-size:10px; font-weight:bold; text-align:center;">${d}</div>`;
+  });
+
+  for (let i = 0; i < startOffset; i++) html += `<div style="background:var(--s2); min-height:100px;"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const clients = DB.filter(c => c.startDate === dateStr && c.status !== 'cancelled' && c.status !== 'completed');
+    
+    html += `<div style="padding:5px; background:white; min-height:100px; border-bottom:1px solid var(--s3); overflow-y:auto;">
+      <div style="font-family:var(--mono); font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--tx3);">${d}</div>
+      ${clients.map(c => `
+        <div style="font-size:9px; padding:3px 5px; margin-top:2px; background:var(--goldbg); color:var(--gold); border-left:3px solid var(--gold); border-radius:2px; cursor:pointer; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" 
+             onclick="openDetail('${c.id}')" title="${esc(c.name)}">
+          ${esc(c.name)}
+        </div>
+      `).join('')}
+    </div>`;
+  }
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// --- LOGIQUE HISTORIQUE ---
+function renderHistory() {
+  const data = DB.filter(c => c.status === 'completed');
+  const tb = document.getElementById('history-tbody');
+  if (!tb) return;
+  
+  tb.innerHTML = !data.length ? `<tr><td colspan="7"><div class="empty"><div class="empty-txt">Aucun dossier dans l'historique</div></div></td></tr>` :
+    data.map(c => `
+      <tr>
+        <td class="td-name">${esc(c.name)}</td>
+        <td><span style="font-family:var(--mono); font-size:11px">${esc(c.phone)}</span></td>
+        <td>${tLbl(c.type)}</td>
+        <td>${fmtDate(c.startDate)}</td>
+        <td style="font-weight:bold; color:var(--green)">${c.price || 0} ${c.currency}</td>
+        <td><span class="badge b-confirmed">ACHEVÉ ✅</span></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="openDetail('${c.id}')">👁 Voir</button></td>
+      </tr>
+    `).join('');
+}  
 </script>
 </body>
 </html>
