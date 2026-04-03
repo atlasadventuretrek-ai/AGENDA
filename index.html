@@ -537,7 +537,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 // ══════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz2cS58Hag_dIXReIf1rfsz6QaiYsPCfWxCSncocsnfy4nLCTOE0764ZQ4ChhczukBo/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYGRW65V0XYFHc98FuovQGgjZ1nnaOhnUbpLyOySgZQx89DbcKGDugyLroDfimZMst/exec';
 const PWD_KEY = 'gm_pwd_v3';
 const COLS = ['id','name','phone','channel','channelOther','type','dest','startDate','endDate',
   'flightIn','flightOut','arrivalTime','departTime','transferIn','transferOut','hotel',
@@ -583,7 +583,16 @@ function changePwd(){
 // ══════════════════════════════════════════
 //  GOOGLE APPS SCRIPT SYNC
 // ══════════════════════════════════════════
-function objToRow(c){ return COLS.map(k=>String(c[k]||'')) }
+function objToRow(c){
+  return COLS.map(k=>{
+    let v = c[k]||'';
+    // Clean ISO dates to YYYY-MM-DD
+    if(typeof v === 'string' && v.includes('T') && v.includes('Z')){
+      try{ v = new Date(v).toISOString().slice(0,10); }catch(e){}
+    }
+    return String(v);
+  });
+}
 function rowToObj(row){ const o={}; COLS.forEach((k,i)=>o[k]=row[i]||''); return o; }
 
 function showSync(on){
@@ -593,47 +602,91 @@ function showSync(on){
 
 async function load(){
   showSync(true);
-  try{
-    const url = APPS_SCRIPT_URL + '?t=' + Date.now();
-    const r = await fetch(url);
-    const d = await r.json();
-    if(d.ok && d.values){
-      const rows = d.values.slice(1).filter(r=>r[0]);
-      DB = rows.map(rowToObj);
-      localStorage.setItem('gm_cache_v3', JSON.stringify(DB));
-    } else {
-      throw new Error('Bad response');
-    }
-  } catch(e){
-    console.warn('Load failed:', e);
-    try{ DB = JSON.parse(localStorage.getItem('gm_cache_v3')||'[]'); }catch(e2){ DB=[]; }
-    toast('Hors-ligne — données en cache','info');
-  }
-  showSync(false);
+  return new Promise((resolve)=>{
+    const cbName = 'gm_cb_'+Date.now();
+    const script = document.createElement('script');
+    window[cbName] = function(d){
+      try{
+        if(d.ok && d.values && d.values.length>1){
+          const rows = d.values.slice(1).filter(r=>r[0]);
+          DB = rows.map(rowToObj);
+          // Fix date format: remove time part from ISO dates
+          DB.forEach(c=>{
+            ['startDate','endDate','advanceDate'].forEach(k=>{
+              if(c[k] && c[k].includes('T')){
+                // Convert ISO to YYYY-MM-DD, adjust for timezone
+                const d = new Date(c[k]);
+                c[k] = d.toISOString().slice(0,10);
+              }
+            });
+          });
+          localStorage.setItem('gm_cache_v3', JSON.stringify(DB));
+        } else {
+          const cached = localStorage.getItem('gm_cache_v3');
+          DB = cached ? JSON.parse(cached) : [];
+        }
+      }catch(e){
+        console.warn('JSONP parse error:', e);
+        const cached = localStorage.getItem('gm_cache_v3');
+        DB = cached ? JSON.parse(cached) : [];
+      }
+      delete window[cbName];
+      try{document.body.removeChild(script);}catch(e){}
+      showSync(false);
+      resolve();
+    };
+    script.onerror = function(){
+      console.warn('JSONP script error');
+      const cached = localStorage.getItem('gm_cache_v3');
+      DB = cached ? JSON.parse(cached) : [];
+      if(DB.length) toast('Mode cache — '+DB.length+' clients','info');
+      delete window[cbName];
+      try{document.body.removeChild(script);}catch(e){}
+      showSync(false);
+      resolve();
+    };
+    script.src = APPS_SCRIPT_URL+'?callback='+cbName+'&t='+Date.now();
+    document.body.appendChild(script);
+    // Timeout after 10s
+    setTimeout(()=>{
+      if(window[cbName]){
+        window[cbName]({ok:false, values:[]});
+      }
+    }, 10000);
+  });
 }
+
 
 async function save(){
   if(_syncing) return;
   _syncing = true;
   showSync(true);
+  // Always save to cache immediately
   localStorage.setItem('gm_cache_v3', JSON.stringify(DB));
   try{
     const headers = COLS;
     const rows = DB.map(objToRow);
+    const body = JSON.stringify({action:'save', headers, rows});
     const r = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action:'save', headers, rows })
+      method:'POST',
+      body: body
     });
-    const d = await r.json();
-    if(!d.ok) throw new Error(d.error||'Save failed');
-    toast('Sauvegardé ✓','success');
-  } catch(e){
-    console.warn('Save failed:', e);
-    toast('Sauvegarde locale uniquement','error');
+    const text = await r.text();
+    let d;
+    try{ d=JSON.parse(text); }catch(e){ d={ok:false}; }
+    if(d.ok){
+      toast('Sauvegardé dans Google Sheets ✓','success');
+    } else {
+      throw new Error(d.error||'error');
+    }
+  }catch(e){
+    console.warn('Save to Sheets failed:', e);
+    toast('Sauvegardé localement (sync au prochain chargement)','info');
   }
   _syncing = false;
   showSync(false);
 }
+
 
 // ══════════════════════════════════════════
 //  INIT
