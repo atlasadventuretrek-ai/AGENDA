@@ -737,23 +737,44 @@ function load(){
 async function save(){
   if(syncing) return;
   syncing=true; showSync(true);
-  localStorage.setItem(CACHE_KEY,JSON.stringify(DB));
-  try{
-    const r=await fetch(GAS_URL,{
-      method:'POST',
-      body:JSON.stringify({action:'save',headers:COLS,rows:DB.map(objToRow)})
+  
+  // Sauvegarde locale (ton cache navigateur)
+  localStorage.setItem(CACHE_KEY, JSON.stringify(DB));
+  
+  try {
+    // ON PRÉPARE LES DONNÉES PROPREMENT
+    const rows = DB.map(obj => {
+      return COLS.map(key => {
+        let val = obj[key] || '';
+        
+        // FORCE LE FORMAT TEXTE SUR LES DATES POUR ÉVITER LE BUG CASABLANCA
+        if(['startDate', 'endDate', 'advanceDate'].includes(key)){
+          val = cleanDate(val); // On envoie "2026-04-10" (du texte pur)
+        }
+        
+        return String(val); // On s'assure que tout est envoyé comme du texte
+      });
     });
-    const t=await r.text();
-    const d=JSON.parse(t);
-    if(d.ok) toast('Sauvegardé ✓','success');
-    else throw new Error(d.error);
-  }catch(e){
-    console.warn('Save:',e);
-    toast('Sauvegardé localement','info');
-  }
-  syncing=false; showSync(false);
-}
 
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'save', headers: COLS, rows: rows })
+    });
+
+    const t = await r.text();
+    const d = JSON.parse(t);
+    
+    if(d.ok) toast('Sauvegardé ✓', 'success');
+    else throw new Error(d.error);
+
+  } catch(e) {
+    console.warn('Save Error:', e);
+    toast('Sauvegardé localement', 'info');
+  }
+  
+  syncing = false;
+  showSync(false);
+}
 // ══════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════
