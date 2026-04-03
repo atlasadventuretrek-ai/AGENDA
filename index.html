@@ -610,19 +610,25 @@ async function load(){
   showSync(true);
   try{
     const url = APPS_SCRIPT_URL + '?t=' + Date.now();
-    const r = await fetch(url);
-    const d = await r.json();
+    const r = await fetch(url, {redirect:'follow'});
+    const text = await r.text();
+    let d;
+    try{ d = JSON.parse(text); }catch(e){ throw new Error('JSON parse error: '+text.slice(0,100)); }
     if(d.ok && d.values){
       const rows = d.values.slice(1).filter(r=>r[0]);
       DB = rows.map(rowToObj);
       localStorage.setItem('gm_cache_v3', JSON.stringify(DB));
+    } else if(d.ok && (!d.values || d.values.length===0)){
+      DB = [];
+      localStorage.setItem('gm_cache_v3', JSON.stringify(DB));
     } else {
-      throw new Error('Bad response');
+      throw new Error('Bad response: '+(d.error||'unknown'));
     }
   } catch(e){
     console.warn('Load failed:', e);
     try{ DB = JSON.parse(localStorage.getItem('gm_cache_v3')||'[]'); }catch(e2){ DB=[]; }
-    toast('Hors-ligne — données en cache','info');
+    if(DB.length===0) toast('Connexion Google Sheets impossible — vérifier le déploiement','error');
+    else toast('Mode cache — '+DB.length+' clients','info');
   }
   showSync(false);
 }
@@ -637,6 +643,8 @@ async function save(){
     const rows = DB.map(objToRow);
     const r = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
+      redirect: 'follow',
+      headers: {'Content-Type': 'text/plain'},
       body: JSON.stringify({ action:'save', headers, rows })
     });
     const d = await r.json();
@@ -773,7 +781,15 @@ function updateBadges(){
 //  DASHBOARD
 // ══════════════════════════════════════════
 function renderDashboard(){
-  const tot=DB.length, conf=DB.filter(c=>c.status==='confirmed').length;
+// Show connection status
+  const connStatus = document.getElementById('conn-status');
+  if(connStatus) connStatus.remove();
+  document.getElementById('page-dashboard').insertAdjacentHTML('afterbegin',
+    `<div id="conn-status" style="background:${DB.length>0?'var(--gbg)':'var(--rbg)'};border:1px solid ${DB.length>0?'var(--gbdr)':'var(--rbdr)'};border-radius:var(--r);padding:8px 14px;margin-bottom:14px;font-family:var(--mono);font-size:10px;color:${DB.length>0?'var(--green2)':'var(--red2)'}">
+      ${DB.length>0?'✓ '+DB.length+' clients chargés depuis Google Sheets':'⚠ Impossible de charger Google Sheets — vérifier le déploiement Apps Script'}
+    </div>`
+  );
+    const tot=DB.length, conf=DB.filter(c=>c.status==='confirmed').length;
   const pend=DB.filter(c=>c.status==='pending').length, canc=DB.filter(c=>c.status==='cancelled').length;
   const adv=DB.filter(c=>c.advance==='yes').length;
   document.getElementById('dash-stats').innerHTML=`
@@ -856,7 +872,15 @@ function renderCancelled(){
 //  ANALYTICS
 // ══════════════════════════════════════════
 function renderAnalytics(){
-  const tot=DB.length,conf=DB.filter(c=>c.status==='confirmed').length,pend=DB.filter(c=>c.status==='pending').length,canc=DB.filter(c=>c.status==='cancelled').length;
+// Show connection status
+  const connStatus = document.getElementById('conn-status');
+  if(connStatus) connStatus.remove();
+  document.getElementById('page-dashboard').insertAdjacentHTML('afterbegin',
+    `<div id="conn-status" style="background:${DB.length>0?'var(--gbg)':'var(--rbg)'};border:1px solid ${DB.length>0?'var(--gbdr)':'var(--rbdr)'};border-radius:var(--r);padding:8px 14px;margin-bottom:14px;font-family:var(--mono);font-size:10px;color:${DB.length>0?'var(--green2)':'var(--red2)'}">
+      ${DB.length>0?'✓ '+DB.length+' clients chargés depuis Google Sheets':'⚠ Impossible de charger Google Sheets — vérifier le déploiement Apps Script'}
+    </div>`
+  );
+    const tot=DB.length,conf=DB.filter(c=>c.status==='confirmed').length,pend=DB.filter(c=>c.status==='pending').length,canc=DB.filter(c=>c.status==='cancelled').length;
   document.getElementById('analytics-stats').innerHTML=`
     <div class="stat"><div class="stat-lbl">Total</div><div class="stat-v gold">${tot}</div></div>
     <div class="stat"><div class="stat-lbl">Confirmés</div><div class="stat-v green">${conf}</div></div>
