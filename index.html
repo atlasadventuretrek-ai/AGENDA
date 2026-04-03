@@ -356,6 +356,32 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       <div class="tbl-wrap"><table><thead><tr>
         <th>Client</th><th>Tél</th><th>Type</th><th>Départ prévu</th><th>Avance</th><th>Note</th><th>Actions</th>
       </tr></thead><tbody id="cancelled-tbody"></tbody></table></div>
+</div> <div class="page" id="page-calendar">
+      <div class="topbar">
+        <div><div class="pg-title">Calendrier Mensuel</div><div class="pg-sub">Vue globale de vos missions</div></div>
+        <div class="topbar-r">
+          <button class="btn btn-ghost btn-sm" onclick="changeCalMonth(-1)">◀ Précédent</button>
+          <button class="btn btn-ghost btn-sm" onclick="changeCalMonth(1)">Suivant ▶</button>
+        </div>
+      </div>
+      <div id="calendar-container" class="card" style="padding:0; overflow:hidden;">
+        </div>
+    </div>
+
+    <div class="page" id="page-history">
+      <div class="topbar">
+        <div><div class="pg-title">Historique</div><div class="pg-sub">Dossiers achevés et payés</div></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th><th>Tél</th><th>Type</th><th>Départ</th><th>Prix</th><th>Statut</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="page" id="page-analytics">
