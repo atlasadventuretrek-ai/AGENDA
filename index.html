@@ -799,15 +799,21 @@ function updateDate(){
   if(e2)e2.textContent=s;
 }
 
+// ══════════════════════════════════════════
+//  LOGIQUE D'AFFICHAGE ET NAVIGATION
+// ══════════════════════════════════════════
+
 function renderAll(){
-  renderDash(); renderClients(); renderPending();
-  renderUpcoming(); renderCancelled(); renderCalendar();
-  updateBadges(); updateExpPreview();
+  renderDash(); 
+  renderClients(); 
+  renderPending();
+  renderUpcoming(); 
+  renderCancelled(); 
+  renderCalendar();
+  updateBadges(); 
+  updateExpPreview();
 }
 
-// ══════════════════════════════════════════
-//  NAV
-// ══════════════════════════════════════════
 function nav(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
@@ -819,60 +825,137 @@ function nav(id){
   if(id==='calendar') renderCalendar();
 }
 
-// ══════════════════════════════════════════
-//  BADGES
-// ══════════════════════════════════════════
-function updateBadges(){
-  const al=DB.filter(c=>{ if(c.status==='cancelled') return false; const d=daysUntil(c.startDate); return d!==null&&d>=0&&d<=7; }).length;
-  document.getElementById('nb-al').textContent=al;
-  document.getElementById('nb-cl').textContent=DB.length;
-  document.getElementById('nb-pe').textContent=DB.filter(c=>c.status==='pending').length;
-  document.getElementById('nb-up').textContent=DB.filter(c=>c.status==='confirmed'&&daysUntil(c.startDate)>=0).length;
+function setF(f, el) { 
+    CF = f; 
+    document.querySelectorAll('.fbar .fb').forEach(b => b.classList.remove('active')); 
+    if (el) el.classList.add('active'); 
+    renderClients(); 
+}
+
+function srt(field) { 
+    if (SF === field) SA = !SA; 
+    else { SF = field; SA = true; } 
+    renderClients(); 
 }
 
 // ══════════════════════════════════════════
-//  DASHBOARD
+//  BADGES ET STATISTIQUES
 // ══════════════════════════════════════════
+
+function updateBadges(){
+  const al = DB.filter(c => { 
+    if(c.status === 'cancelled') return false; 
+    const d = daysUntil(c.startDate); 
+    return d !== null && d >= 0 && d <= 7; 
+  }).length;
+  document.getElementById('nb-al').textContent = al;
+  document.getElementById('nb-cl').textContent = DB.length;
+  document.getElementById('nb-pe').textContent = DB.filter(c => c.status === 'pending').length;
+  document.getElementById('nb-up').textContent = DB.filter(c => c.status === 'confirmed' && daysUntil(c.startDate) >= 0).length;
+}
+
+// ══════════════════════════════════════════
+//  RENDU DU DASHBOARD (TABLEAU DE BORD)
+// ══════════════════════════════════════════
+
 function renderDash(){
-  const tot=DB.length,conf=DB.filter(c=>c.status==='confirmed').length;
-  const pend=DB.filter(c=>c.status==='pending').length,canc=DB.filter(c=>c.status==='cancelled').length;
-  const adv=DB.filter(c=>c.advance==='yes').length;
-  document.getElementById('dash-stats').innerHTML=`
+  const tot = DB.length, conf = DB.filter(c => c.status === 'confirmed').length;
+  const pend = DB.filter(c => c.status === 'pending').length, canc = DB.filter(c => c.status === 'cancelled').length;
+  const adv = DB.filter(c => c.advance === 'yes').length;
+  
+  document.getElementById('dash-stats').innerHTML = `
     <div class="stat"><div class="stat-lbl">Total</div><div class="stat-v gold">${tot}</div><div class="stat-h">dossiers</div></div>
     <div class="stat"><div class="stat-lbl">Confirmés</div><div class="stat-v green">${conf}</div><div class="stat-h">clients</div></div>
     <div class="stat"><div class="stat-lbl">En attente</div><div class="stat-v amber">${pend}</div><div class="stat-h">à traiter</div></div>
     <div class="stat"><div class="stat-lbl">Annulés</div><div class="stat-v red">${canc}</div><div class="stat-h">dossiers</div></div>
     <div class="stat"><div class="stat-lbl">Avances</div><div class="stat-v gold">${adv}</div><div class="stat-h">reçues</div></div>`;
 
-  const ac=DB.filter(c=>{ if(c.status==='cancelled') return false; const d=daysUntil(c.startDate); return d!==null&&d>=0&&d<=7; }).sort((a,b)=>daysUntil(a.startDate)-daysUntil(b.startDate));
-  document.getElementById('dash-alerts').innerHTML=!ac.length?'<div class="empty"><div class="empty-ico">✓</div><div class="empty-txt">Aucun rappel urgent</div></div>':
-    ac.map(c=>{ const d=daysUntil(c.startDate); return `<div class="al-item ${d<=2?'al-urgent':'al-soon'}" onclick="openDet('${c.id}')"><div class="al-dot ${d<=2?'dot-r':'dot-a'}"></div><div><div class="al-name">${esc(c.name)}</div><div class="al-det">${d===0?"Aujourd'hui !":d===1?'Demain':d+'j'} · ${tLbl(c.type)}${c.dest?' · '+esc(c.dest):''} · ${sBadge(c.status)}</div></div></div>`; }).join('');
+  const ac = DB.filter(c => { 
+    if(c.status === 'cancelled') return false; 
+    const d = daysUntil(c.startDate); 
+    return d !== null && d >= 0 && d <= 7; 
+  }).sort((a,b) => daysUntil(a.startDate) - daysUntil(b.startDate));
+  
+  document.getElementById('dash-alerts').innerHTML = !ac.length ? '<div class="empty"><div class="empty-ico">✓</div><div class="empty-txt">Aucun rappel urgent</div></div>' :
+    ac.map(c => { 
+      const d = daysUntil(c.startDate); 
+      return `<div class="al-item ${d <= 2 ? 'al-urgent' : 'al-soon'}" onclick="openDet('${c.id}')"><div class="al-dot ${d <= 2 ? 'dot-r' : 'dot-a'}"></div><div><div class="al-name">${esc(c.name)}</div><div class="al-det">${d === 0 ? "Aujourd'hui !" : d === 1 ? 'Demain' : d + 'j'} · ${tLbl(c.type)} · ${sBadge(c.status)}</div></div></div>`; 
+    }).join('');
 
   const uc = DB.filter(c => c.status === 'confirmed' && daysUntil(c.startDate) >= 0)
     .sort((a, b) => cleanDate(a.startDate).localeCompare(cleanDate(b.startDate)))
     .slice(0, 6);
 
-  document.getElementById('dash-upcoming').innerHTML = !uc.length ? 
-    '<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun départ prévu</div></div>' :
+  document.getElementById('dash-upcoming').innerHTML = !uc.length ? '<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun départ prévu</div></div>' :
     uc.map(c => {
       const parts = cleanDate(c.startDate).split('-');
-      const dayNum = parts[2] || "??"; 
-      const monthIdx = parts[1] ? parseInt(parts[1]) - 1 : 0;
-      const monthLabel = mName(monthIdx);
-
-      return `
-        <div class="up-item" onclick="openDet('${c.id}')">
-          <div class="up-date">
-            <div class="up-day">${dayNum}</div>
-            <div class="up-month">${monthLabel}</div>
-          </div>
-          <div class="up-info">
-            <div class="up-name">${esc(c.name)}</div>
-            <div class="up-sub">${tLbl(c.type)}${c.dest ? ' · ' + esc(c.dest) : ''}${c.guide ? ' · 👤' + esc(c.guide) : ''}</div>
-          </div>
-          <div>${daysChip(c.startDate)}</div>
-        </div>`;
+      return `<div class="up-item" onclick="openDet('${c.id}')"><div class="up-date"><div class="up-day">${parts[2] || "00"}</div><div class="up-month">${mName(parseInt(parts[1]-1) || 0)}</div></div><div class="up-info"><div class="up-name">${esc(c.name)}</div><div class="up-sub">${tLbl(c.type)}${c.dest ? ' · ' + esc(c.dest) : ''}</div></div><div>${daysChip(c.startDate)}</div></div>`;
     }).join('');
+  
+  const pc = DB.filter(c => c.status === 'pending').sort((a,b) => (daysUntil(a.startDate) || 0) - (daysUntil(b.startDate) || 0));
+  document.getElementById('dash-pending').innerHTML = !pc.length ? '<div class="empty"><div class="empty-ico">◎</div><div class="empty-txt">Aucun dossier en attente</div></div>' :
+    `<div class="tbl-wrap"><table><thead><tr><th>Client</th><th>Type</th><th>Départ</th><th>Via</th><th>Jours</th><th>Action</th></tr></thead><tbody>${pc.map(c => `<tr><td class="td-name">${esc(c.name)}</td><td>${tLbl(c.type)}</td><td>${fmtDate(c.startDate)}</td><td>${chLbl(c.channel,c.channelOther)}</td><td>${daysChip(c.startDate)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-green btn-sm" onclick="quickConfirm('${c.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="openDet('${c.id}')">Voir</button></div></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+// ══════════════════════════════════════════
+//  RENDU DE LA LISTE DES CLIENTS
+// ══════════════════════════════════════════
+
+function renderClients() {
+    const searchInput = document.getElementById('cl-search');
+    const q = (searchInput ? searchInput.value : '').toLowerCase();
+
+    let data = DB.filter(c => {
+        if (CF === 'pending') return c.status === 'pending';
+        if (CF === 'confirmed') return c.status === 'confirmed';
+        if (CF === 'cancelled') return c.status === 'cancelled';
+        if (CF === '1day') return c.type === '1day';
+        if (CF === 'circuit') return c.type === 'circuit';
+        if (CF === 'transfer') return (c.type === 'transfer' || c.type === 'airport');
+        return true;
+    });
+
+    if (q) {
+        data = data.filter(c =>
+            (c.name || '').toLowerCase().includes(q) ||
+            (c.phone || '').includes(q) ||
+            (c.guide || '').toLowerCase().includes(q) ||
+            (c.dest || '').toLowerCase().includes(q)
+        );
+    }
+
+    data.sort((a, b) => {
+        let va = cleanDate(a[SF]) || a[SF] || '';
+        let vb = cleanDate(b[SF]) || b[SF] || '';
+        return SA ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+
+    const tb = document.getElementById('cl-tbody');
+    if (!tb) return;
+
+    if (data.length === 0) {
+        tb.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="empty-ico">◈</div><div class="empty-txt">Aucun client trouvé</div></div></td></tr>`;
+    } else {
+        tb.innerHTML = data.map(c => `
+      <tr>
+        <td class="td-name" onclick="openDet('${c.id}')" style="cursor:pointer">${esc(c.name)}</td>
+        <td><span style="font-family:var(--mono);font-size:11px">${esc(c.phone || '')}</span></td>
+        <td><span style="font-size:10px;color:var(--tx3)">${chLbl(c.channel, c.channelOther)}</span></td>
+        <td>${tLbl(c.type)}</td>
+        <td>${fmtDate(c.startDate)}</td>
+        <td>${daysChip(c.startDate)}</td>
+        <td>${sBadge(c.status)}</td>
+        <td>${c.advance === 'yes' ? '<span class="badge b-adv">✓ Oui</span>' : '<span class="badge b-noadv">Non</span>'}</td>
+        <td><span style="font-size:11px">${esc(c.guide || '—')}</span></td>
+        <td>
+          <div style="display:flex;gap:3px">
+            <button class="btn btn-ghost btn-sm" onclick="openDet('${c.id}')">👁</button>
+            <button class="btn btn-ghost btn-sm" onclick="editById('${c.id}')">✏</button>
+          </div>
+        </td>
+      </tr>`).join('');
+    }
+}
   
   const pc=DB.filter(c=>c.status==='pending').sort((a,b)=>{ const da=daysUntil(a.startDate),db=daysUntil(b.startDate); if(da===null&&db===null) return 0; if(da===null) return 1; if(db===null) return -1; return da-db; });
   document.getElementById('dash-pending').innerHTML=!pc.length?'<div class="empty"><div class="empty-ico">◎</div><div class="empty-txt">Aucun dossier en attente</div></div>':
@@ -886,37 +969,64 @@ async function quickConfirm(id){
 
 function setF(f,el){ CF=f; document.querySelectorAll('.fbar .fb').forEach(b=>b.classList.remove('active')); if(el)el.classList.add('active'); renderClients(); }
 function srt(field){ if(SF===field)SA=!SA; else{SF=field;SA=true;} renderClients(); }
-
 function renderClients(){
-  const q=(document.getElementById('cl-search')?.value||'').toLowerCase();
-  let data=DB.filter(c=>{
-    if(CF==='pending') return c.status==='pending';
-    if(CF==='confirmed') return c.status==='confirmed';
-    if(CF==='cancelled') return c.status==='cancelled';
-    if(CF==='1day') return c.type==='1day';
-    if(CF==='circuit') return c.type==='circuit';
-    if(CF==='transfer') return c.type==='transfer'||c.type==='airport';
+  const searchInput = document.getElementById('cl-search');
+  const q = (searchInput ? searchInput.value : '').toLowerCase();
+  
+  // 1. FILTRAGE (On vérifie que DB n'est pas vide)
+  let data = DB.filter(c => {
+    if(CF === 'pending') return c.status === 'pending';
+    if(CF === 'confirmed') return c.status === 'confirmed';
+    if(CF === 'cancelled') return c.status === 'cancelled';
+    if(CF === '1day') return c.type === '1day';
+    if(CF === 'circuit') return c.type === 'circuit';
+    if(CF === 'transfer') return (c.type === 'transfer' || c.type === 'airport');
     return true;
   });
-  if(q) data=data.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q)||(c.guide||'').toLowerCase().includes(q)||(c.dest||'').toLowerCase().includes(q));
-  data.sort((a,b)=>{ let va=cleanDate(a[SF])||a[SF]||'',vb=cleanDate(b[SF])||b[SF]||''; return SA?va.localeCompare(vb):vb.localeCompare(va); });
-  const tb=document.getElementById('cl-tbody');
-  tb.innerHTML=!data.length?`<tr><td colspan="10"><div class="empty"><div class="empty-ico">◈</div><div class="empty-txt">Aucun client</div></div></td></tr>`:
-    data.map(c=>`<tr>
-      <td class="td-name" onclick="openDet('${c.id}')" style="cursor:pointer">${esc(c.name)}</td>
-      <td><span style="font-family:var(--mono);font-size:11px">${esc(c.phone||'')}</span></td>
-      <td><span style="font-size:10px;color:var(--tx3)">${chLbl(c.channel,c.channelOther)}</span></td>
-      <td>${tLbl(c.type)}</td>
-      <td>${fmtDate(c.startDate)}</td>
-      <td>${daysChip(c.startDate)}</td>
-      <td>${sBadge(c.status)}</td>
-      <td>${c.advance==='yes'?'<span class="badge b-adv">✓ Oui</span>':'<span class="badge b-noadv">Non</span>'}</td>
-      <td><span style="font-size:11px">${esc(c.guide||'—')}</span></td>
-      <td><div style="display:flex;gap:3px">
-        <button class="btn btn-ghost btn-sm" onclick="openDet('${c.id}')">👁</button>
-        <button class="btn btn-ghost btn-sm" onclick="editById('${c.id}')">✏</button>
-      </div></td>
-    </tr>`).join('');
+
+  // 2. RECHERCHE
+  if(q) {
+    data = data.filter(c => 
+      (c.name || '').toLowerCase().includes(q) || 
+      (c.phone || '').includes(q) || 
+      (c.guide || '').toLowerCase().includes(q) || 
+      (c.dest || '').toLowerCase().includes(q)
+    );
+  }
+
+  // 3. TRI (Impitoyable sur les dates)
+  data.sort((a, b) => {
+    let va = cleanDate(a[SF]) || a[SF] || '';
+    let vb = cleanDate(b[SF]) || b[SF] || '';
+    return SA ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+
+  // 4. AFFICHAGE DANS LE TABLEAU
+  const tb = document.getElementById('cl-tbody');
+  if(!tb) return;
+
+  if(data.length === 0) {
+    tb.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="empty-ico">◈</div><div class="empty-txt">Aucun client trouvé</div></div></td></tr>`;
+  } else {
+    tb.innerHTML = data.map(c => `
+      <tr>
+        <td class="td-name" onclick="openDet('${c.id}')" style="cursor:pointer">${esc(c.name)}</td>
+        <td><span style="font-family:var(--mono);font-size:11px">${esc(c.phone || '')}</span></td>
+        <td><span style="font-size:10px;color:var(--tx3)">${chLbl(c.channel, c.channelOther)}</span></td>
+        <td>${tLbl(c.type)}</td>
+        <td>${fmtDate(c.startDate)}</td>
+        <td>${daysChip(c.startDate)}</td>
+        <td>${sBadge(c.status)}</td>
+        <td>${c.advance === 'yes' ? '<span class="badge b-adv">✓ Oui</span>' : '<span class="badge b-noadv">Non</span>'}</td>
+        <td><span style="font-size:11px">${esc(c.guide || '—')}</span></td>
+        <td>
+          <div style="display:flex;gap:3px">
+            <button class="btn btn-ghost btn-sm" onclick="openDet('${c.id}')">👁</button>
+            <button class="btn btn-ghost btn-sm" onclick="editById('${c.id}')">✏</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
 }
 
 function calMove(dir){ calDate.setMonth(calDate.getMonth()+dir); renderCalendar(); }
