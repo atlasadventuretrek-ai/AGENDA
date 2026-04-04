@@ -623,7 +623,7 @@ async function load(){
       showSync(false);
       resolve();
     };
-    script.src = APPS_SCRIPT_URL + '?callback='+cbName+'&t='+Date.now();
+    script.src = APPS_SCRIPT_URL + '&callback='+cbName+'&t='+Date.now();
     document.body.appendChild(script);
     setTimeout(()=>{ if(window[cbName]){ window[cbName]({ok:false}); } }, 8000);
   });
