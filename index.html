@@ -706,7 +706,7 @@ function nav(id){
     }
   });
 }// ══════════════════════════════════════════
-//  UTILS
+/  UTILS
 // ══════════════════════════════════════════
 function today(){ return new Date(new Date().toDateString()) }
 function daysUntil(d){ if(!d) return null; return Math.round((new Date(d)-today())/(864e5)) }
@@ -721,6 +721,7 @@ function daysChip(d){
 }
 function fmtDate(s){ if(!s) return '—'; const[y,m,d]=s.split('-'); return `${d}/${m}/${y}`; }
 function mName(m){ return ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][m] }
+function mFull(m){ return ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][m] }
 function daysBetween(a,b){ return Math.max(0,Math.round((new Date(b)-new Date(a))/864e5)) }
 function sBadge(s){
   if(s==='confirmed') return '<span class="badge b-confirmed">✓ Confirmé</span>';
