@@ -264,7 +264,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 </head>
 <body>
 
-<!-- LOCK -->
 <div id="lock">
   <div>
     <div class="lk-logo">Guid Marokko</div>
@@ -278,7 +277,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
   </div>
 </div>
 
-<!-- APP -->
 <div class="app" id="app" style="display:none">
   <div class="sidebar">
     <div class="logo">
@@ -302,7 +300,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 
   <div class="main">
 
-    <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <div class="topbar">
         <div><div class="pg-title">Tableau de bord</div><div class="pg-sub" id="dash-date"></div></div>
@@ -320,7 +317,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       <div class="card"><div class="card-t">⏳ En attente — à contacter</div><div id="dash-pending"></div></div>
     </div>
 
-    <!-- CLIENTS -->
     <div class="page" id="page-clients">
       <div class="topbar">
         <div><div class="pg-title">Clients</div><div class="pg-sub">Tous les dossiers</div></div>
@@ -343,7 +339,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </tr></thead><tbody id="cl-tbody"></tbody></table></div>
     </div>
 
-    <!-- CALENDRIER -->
     <div class="page" id="page-calendar">
       <div class="topbar">
         <div><div class="pg-title">Calendrier</div><div class="pg-sub" id="cal-sub"></div></div>
@@ -357,7 +352,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       <div id="cal-grid"></div>
     </div>
 
-    <!-- EN ATTENTE -->
     <div class="page" id="page-pending">
       <div class="topbar">
         <div><div class="pg-title">En attente</div><div class="pg-sub">À confirmer</div></div>
@@ -368,7 +362,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </tr></thead><tbody id="pe-tbody"></tbody></table></div>
     </div>
 
-    <!-- À VENIR -->
     <div class="page" id="page-upcoming">
       <div class="topbar"><div><div class="pg-title">À venir</div><div class="pg-sub">Confirmés — départs à venir</div></div></div>
       <div class="tbl-wrap"><table><thead><tr>
@@ -376,7 +369,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </tr></thead><tbody id="up-tbody"></tbody></table></div>
     </div>
 
-    <!-- ANNULÉS -->
     <div class="page" id="page-cancelled">
       <div class="topbar"><div><div class="pg-title">Annulés</div></div></div>
       <div class="tbl-wrap"><table><thead><tr>
@@ -384,7 +376,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </tr></thead><tbody id="ca-tbody"></tbody></table></div>
     </div>
 
-    <!-- ANALYSES -->
     <div class="page" id="page-analytics">
       <div class="topbar"><div><div class="pg-title">Analyses</div></div></div>
       <div class="stats-row" id="an-stats"></div>
@@ -396,7 +387,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </div>
     </div>
 
-    <!-- EXPORT -->
     <div class="page" id="page-export">
       <div class="topbar"><div><div class="pg-title">Export PDF mensuel</div></div></div>
       <div class="card" style="max-width:480px">
@@ -416,7 +406,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
       </div>
     </div>
 
-    <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <div class="topbar"><div><div class="pg-title">Paramètres</div></div></div>
       <div style="display:grid;gap:14px;max-width:480px">
@@ -443,7 +432,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
   </div>
 </div>
 
-<!-- MODAL CLIENT -->
 <div class="ov" id="ov-cl">
 <div class="modal">
   <div class="modal-hd"><span id="cl-modal-title">Nouveau client</span><div class="mx" onclick="closeM('ov-cl')">✕</div></div>
@@ -509,7 +497,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 </div>
 </div>
 
-<!-- MODAL DETAIL -->
 <div class="ov" id="ov-det">
 <div class="modal" style="max-width:720px">
   <div class="modal-hd"><span id="det-title">Dossier</span><div class="mx" onclick="closeM('ov-det')">✕</div></div>
@@ -532,7 +519,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 </div>
 </div>
 
-<!-- MODAL PDF -->
 <div class="ov" id="ov-pdf">
 <div class="modal" style="max-width:420px">
   <div class="modal-hd"><span id="pdf-title">Options PDF</span><div class="mx" onclick="closeM('ov-pdf')">✕</div></div>
@@ -575,61 +561,76 @@ let calDate = new Date();
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2) }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 function getPwd(){ return localStorage.getItem(PWD_KEY)||'marokko2024' }
+
 function today() {
-  // Force l'heure de Casablanca pour comparer proprement
   const now = new Date().toLocaleString("en-US", {timeZone: "Africa/Casablanca"});
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
+function cleanDate(d) {
+  if(!d) return "";
+  let s = String(d).trim();
+  if (s.includes('T')) return s.split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  
+  const dateObj = new Date(d);
+  if(isNaN(dateObj.getTime())) return s;
+
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function daysUntil(s) {
-  s = cleanDate(s);
-  if (!s) return null;
-  const parts = s.split('-');
-  // On crée la date cible à minuit pile sans passer par le texte ISO
+  const clean = cleanDate(s);
+  if (!clean) return null;
+  const parts = clean.split('-');
   const target = new Date(parts[0], parts[1] - 1, parts[2]);
   const current = today();
   return Math.round((target - current) / 864e5);
 }
 
-  
 function fmtDate(s){
   s = cleanDate(s);
   if(!s) return '—';
   const[y,m,d]=s.split('-');
   return `${d}/${m}/${y}`;
 }
-function daysUntil(s){
-  s = cleanDate(s);
-  if(!s) return null;
-  return Math.round((new Date(s)-today())/864e5);
-}
+
 function daysChip(s){
   const n=daysUntil(s);
   if(n===null) return '<span class="chip chip-none">—</span>';
   if(n<0) return `<span class="chip chip-past">J+${Math.abs(n)}</span>`;
   if(n===0) return `<span class="chip chip-urgent">Aujourd'hui</span>`;
+  if(n===1) return `<span class="chip chip-urgent">Demain</span>`;
   if(n<=3) return `<span class="chip chip-urgent">${n}j</span>`;
   if(n<=7) return `<span class="chip chip-soon">${n}j</span>`;
   return `<span class="chip chip-ok">${n}j</span>`;
 }
+
 function mName(m){ return ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][m] }
 function mFull(m){ return ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][m] }
 function daysBetween(a,b){ a=cleanDate(a);b=cleanDate(b); return Math.max(0,Math.round((new Date(b)-new Date(a))/864e5)) }
+
 function sBadge(s){
   if(s==='confirmed') return '<span class="badge b-confirmed">✓ Confirmé</span>';
   if(s==='cancelled') return '<span class="badge b-cancelled">✕ Annulé</span>';
   return '<span class="badge b-pending">◎ En attente</span>';
 }
+
 function tLbl(t){ return {circuit:'Circuit',transfer:'Transfert',airport:'Transf. Aéro','1day':'1 Jour'}[t]||t||'—' }
 function chLbl(c,o){ if(c==='other') return o||'Autre'; return {whatsapp:'WhatsApp',telegram:'Telegram',email:'Email',phone:'Tél',instagram:'Instagram'}[c]||c }
+
 function guessCountry(p){
   p=(p||'').replace(/[\s\-]/g,'');
   const map=[['+7','Russie'],['+33','France'],['+44','UK'],['+49','Allemagne'],['+34','Espagne'],['+39','Italie'],['+31','Pays-Bas'],['+32','Belgique'],['+41','Suisse'],['+48','Pologne'],['+380','Ukraine'],['+375','Biélorussie'],['+1','USA/Canada'],['+966','Arabie Saoudite'],['+971','Émirats'],['+972','Israël'],['+212','Maroc'],['+213','Algérie'],['+216','Tunisie'],['+20','Égypte'],['+86','Chine'],['+81','Japon'],['+82','Corée'],['+90','Turquie'],['+351','Portugal'],['+46','Suède'],['+47','Norvège'],['+45','Danemark'],['+358','Finlande'],['+30','Grèce'],['+43','Autriche'],['+36','Hongrie'],['+420','Tchéquie'],['+40','Roumanie'],['+27','Afrique du Sud']];
   for(const[pr,co] of [...map].sort((a,b)=>b[0].length-a[0].length)){ if(p.startsWith(pr)) return co; }
   return '';
 }
+
 function detectC(){
   const p=document.getElementById('f-phone').value;
   const co=guessCountry(p);
@@ -640,23 +641,16 @@ function detectC(){
 }
 
 // ══════════════════════════════════════════
-//  SHEETS HELPERS (JSONP for load, fetch for save)
+//  SHEETS HELPERS
 // ══════════════════════════════════════════
 function rowToObj(row){ 
   const o={}; 
   const dateFields=['startDate','endDate','advanceDate'];
   COLS.forEach((k,i)=>{ 
-    const v = String(row[i]||'');
+    let v = String(row[i]||'');
     o[k] = dateFields.includes(k) ? cleanDate(v) : v;
   }); 
   return o; 
-}
-function objToRow(c){ 
-  return COLS.map(k=>{ 
-    const v = c[k]||'';
-    // Never save ISO dates — always clean first
-    return String(v).includes('T') ? String(v).split('T')[0] : String(v);
-  }); 
 }
 
 function showSync(on){ 
@@ -664,7 +658,6 @@ function showSync(on){
   if(el) el.style.display=on?'flex':'none';
 }
 
-// LOAD via JSONP (avoids CORS)
 function load(){
   return new Promise(resolve=>{
     showSync(true);
@@ -677,7 +670,6 @@ function load(){
         if(d&&d.ok&&d.values&&d.values.length>1){
           const rows=d.values.slice(1).filter(r=>r&&r[0]);
           DB=rows.map(rowToObj);
-          // clean all dates
           DB.forEach(c=>{
             ['startDate','endDate','advanceDate'].forEach(k=>{ c[k]=cleanDate(c[k]); });
           });
@@ -710,22 +702,30 @@ function load(){
   });
 }
 
-// SAVE via POST
+// SAVE — CORRIGÉ (TEXT-PUR)
 async function save(){
   if(syncing) return;
   syncing=true; showSync(true);
   localStorage.setItem(CACHE_KEY,JSON.stringify(DB));
   try{
-    const r=await fetch(GAS_URL,{
-      method:'POST',
-      body:JSON.stringify({action:'save',headers:COLS,rows:DB.map(objToRow)})
+    const rows = DB.map(c => {
+      return COLS.map(k => {
+        let v = c[k] || '';
+        if(['startDate','endDate','advanceDate'].includes(k)) v = cleanDate(v);
+        return String(v);
+      });
     });
-    const t=await r.text();
-    const d=JSON.parse(t);
+
+    const r = await fetch(GAS_URL,{
+      method:'POST',
+      body:JSON.stringify({action:'save',headers:COLS,rows:rows})
+    });
+    const t = await r.text();
+    const d = JSON.parse(t);
     if(d.ok) toast('Sauvegardé ✓','success');
     else throw new Error(d.error);
   }catch(e){
-    console.warn('Save:',e);
+    console.warn('Save Error:',e);
     toast('Sauvegardé localement','info');
   }
   syncing=false; showSync(false);
@@ -746,6 +746,7 @@ function unlock(){
     setTimeout(()=>document.getElementById('lk-err').style.display='none',2000);
   }
 }
+
 function changePwd(){
   const a=document.getElementById('new-pwd').value;
   const b=document.getElementById('new-pwd2').value;
@@ -843,12 +844,10 @@ function renderDash(){
     <div class="stat"><div class="stat-lbl">Annulés</div><div class="stat-v red">${canc}</div><div class="stat-h">dossiers</div></div>
     <div class="stat"><div class="stat-lbl">Avances</div><div class="stat-v gold">${adv}</div><div class="stat-h">reçues</div></div>`;
 
-  // Alerts
   const ac=DB.filter(c=>{ if(c.status==='cancelled') return false; const d=daysUntil(c.startDate); return d!==null&&d>=0&&d<=7; }).sort((a,b)=>daysUntil(a.startDate)-daysUntil(b.startDate));
   document.getElementById('dash-alerts').innerHTML=!ac.length?'<div class="empty"><div class="empty-ico">✓</div><div class="empty-txt">Aucun rappel urgent</div></div>':
     ac.map(c=>{ const d=daysUntil(c.startDate); return `<div class="al-item ${d<=2?'al-urgent':'al-soon'}" onclick="openDet('${c.id}')"><div class="al-dot ${d<=2?'dot-r':'dot-a'}"></div><div><div class="al-name">${esc(c.name)}</div><div class="al-det">${d===0?"Aujourd'hui !":d===1?'Demain':d+'j'} · ${tLbl(c.type)}${c.dest?' · '+esc(c.dest):''} · ${sBadge(c.status)}</div></div></div>`; }).join('');
 
-// Upcoming — CORRIGÉ POUR ÉVITER LE DÉCALAGE DE DATE
   const uc = DB.filter(c => c.status === 'confirmed' && daysUntil(c.startDate) >= 0)
     .sort((a, b) => cleanDate(a.startDate).localeCompare(cleanDate(b.startDate)))
     .slice(0, 6);
@@ -856,11 +855,10 @@ function renderDash(){
   document.getElementById('dash-upcoming').innerHTML = !uc.length ? 
     '<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun départ prévu</div></div>' :
     uc.map(c => {
-      // SOLUTION RADICALE : On découpe le texte "2026-04-10" directement
       const parts = cleanDate(c.startDate).split('-');
-      const dayNum = parts[2]; // Récupère strictement le "10" écrit dans Sheet
-      const monthIdx = parseInt(parts[1]) - 1; // Index 0-11
-      const monthLabel = mName(monthIdx); // Récupère "Avr"
+      const dayNum = parts[2] || "??"; 
+      const monthIdx = parts[1] ? parseInt(parts[1]) - 1 : 0;
+      const monthLabel = mName(monthIdx);
 
       return `
         <div class="up-item" onclick="openDet('${c.id}')">
@@ -876,7 +874,6 @@ function renderDash(){
         </div>`;
     }).join('');
   
-  // Pending
   const pc=DB.filter(c=>c.status==='pending').sort((a,b)=>{ const da=daysUntil(a.startDate),db=daysUntil(b.startDate); if(da===null&&db===null) return 0; if(da===null) return 1; if(db===null) return -1; return da-db; });
   document.getElementById('dash-pending').innerHTML=!pc.length?'<div class="empty"><div class="empty-ico">◎</div><div class="empty-txt">Aucun dossier en attente</div></div>':
     `<div class="tbl-wrap"><table><thead><tr><th>Client</th><th>Type</th><th>Départ</th><th>Via</th><th>Jours</th><th>Action</th></tr></thead><tbody>${pc.map(c=>`<tr><td class="td-name">${esc(c.name)}</td><td>${tLbl(c.type)}</td><td>${fmtDate(c.startDate)}</td><td>${chLbl(c.channel,c.channelOther)}</td><td>${daysChip(c.startDate)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-green btn-sm" onclick="quickConfirm('${c.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="openDet('${c.id}')">Voir</button></div></td></tr>`).join('')}</tbody></table></div>`;
@@ -887,9 +884,6 @@ async function quickConfirm(id){
   c.status='confirmed'; renderAll(); await save();
 }
 
-// ══════════════════════════════════════════
-//  CLIENTS TABLE
-// ══════════════════════════════════════════
 function setF(f,el){ CF=f; document.querySelectorAll('.fbar .fb').forEach(b=>b.classList.remove('active')); if(el)el.classList.add('active'); renderClients(); }
 function srt(field){ if(SF===field)SA=!SA; else{SF=field;SA=true;} renderClients(); }
 
@@ -925,9 +919,6 @@ function renderClients(){
     </tr>`).join('');
 }
 
-// ══════════════════════════════════════════
-//  CALENDAR
-// ══════════════════════════════════════════
 function calMove(dir){ calDate.setMonth(calDate.getMonth()+dir); renderCalendar(); }
 
 function renderCalendar(){
@@ -941,14 +932,13 @@ function renderCalendar(){
   const firstDay=new Date(y,m,1).getDay();
   const daysInMonth=new Date(y,m+1,0).getDate();
   const offset=firstDay===0?6:firstDay-1;
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=cleanDate(new Date());
   let html='<div class="cal-grid">';
   ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d=>{ html+=`<div class="cal-hd">${d}</div>`; });
   for(let i=0;i<offset;i++) html+=`<div class="cal-day empty"></div>`;
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=dateStr===todayStr;
-    // Find clients whose trip includes this date
     const clients=DB.filter(c=>{
       if(c.status==='cancelled') return false;
       const sd=cleanDate(c.startDate);
@@ -964,9 +954,6 @@ function renderCalendar(){
   grid.innerHTML=html;
 }
 
-// ══════════════════════════════════════════
-//  PENDING / UPCOMING / CANCELLED
-// ══════════════════════════════════════════
 function renderPending(){
   const data=DB.filter(c=>c.status==='pending').sort((a,b)=>{ const da=daysUntil(a.startDate),db=daysUntil(b.startDate); if(da===null)return 1; if(db===null)return -1; return da-db; });
   const tb=document.getElementById('pe-tbody');
@@ -975,22 +962,19 @@ function renderPending(){
 }
 
 function renderUpcoming(){
-  const data=DB.filter(c=>c.status==='confirmed'&&daysUntil(c.startDate)>=0).sort((a,b)=>new Date(cleanDate(a.startDate))-new Date(cleanDate(b.startDate)));
+  const data=DB.filter(c=>c.status==='confirmed'&&daysUntil(c.startDate)>=0).sort((a,b)=>cleanDate(a.startDate).localeCompare(cleanDate(b.startDate)));
   const tb=document.getElementById('up-tbody');
   tb.innerHTML=!data.length?`<tr><td colspan="9"><div class="empty"><div class="empty-ico">◷</div><div class="empty-txt">Aucun départ à venir</div></div></td></tr>`:
     data.map(c=>`<tr><td class="td-name" onclick="openDet('${c.id}')" style="cursor:pointer">${esc(c.name)}</td><td><span style="font-family:var(--mono);font-size:11px">${esc(c.phone||'')}</span></td><td>${tLbl(c.type)}</td><td><b>${fmtDate(c.startDate)}</b></td><td>${fmtDate(c.endDate)}</td><td>${daysChip(c.startDate)}</td><td>${esc(c.guide||'—')}</td><td>${esc(c.driver||'—')}</td><td><button class="btn btn-ghost btn-sm" onclick="openDet('${c.id}')">Voir</button></td></tr>`).join('');
 }
 
 function renderCancelled(){
-  const data=DB.filter(c=>c.status==='cancelled').sort((a,b)=>new Date(cleanDate(b.startDate)||0)-new Date(cleanDate(a.startDate)||0));
+  const data=DB.filter(c=>c.status==='cancelled').sort((a,b)=>cleanDate(b.startDate).localeCompare(cleanDate(a.startDate)));
   const tb=document.getElementById('ca-tbody');
   tb.innerHTML=!data.length?`<tr><td colspan="7"><div class="empty"><div class="empty-ico">◌</div><div class="empty-txt">Aucun dossier annulé</div></div></td></tr>`:
     data.map(c=>`<tr><td class="td-name" onclick="openDet('${c.id}')" style="cursor:pointer">${esc(c.name)}</td><td><span style="font-family:var(--mono);font-size:11px">${esc(c.phone||'')}</span></td><td>${tLbl(c.type)}</td><td>${fmtDate(c.startDate)}</td><td>${c.advance==='yes'?'<span class="badge b-adv">Avance reçue</span>':'—'}</td><td style="max-width:160px;font-size:11px;color:var(--tx3)">${esc((c.comments||'').slice(0,60))||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="openDet('${c.id}')">Voir</button></td></tr>`).join('');
 }
 
-// ══════════════════════════════════════════
-//  ANALYTICS
-// ══════════════════════════════════════════
 function renderAnalytics(){
   const tot=DB.length,conf=DB.filter(c=>c.status==='confirmed').length,pend=DB.filter(c=>c.status==='pending').length,canc=DB.filter(c=>c.status==='cancelled').length;
   document.getElementById('an-stats').innerHTML=`
@@ -1012,6 +996,7 @@ function renderAnalytics(){
   renderBar('ch-channel',mk(chm),'#2860b0');
   renderBar('ch-guide',mk(gm).slice(0,8),'#8a5a00');
 }
+
 function renderBar(id,data,color){
   const el=document.getElementById(id);
   if(!data.length){el.innerHTML='<div class="empty"><div class="empty-txt">Pas de données</div></div>';return;}
@@ -1019,9 +1004,6 @@ function renderBar(id,data,color){
   el.innerHTML=data.map(([l,n])=>`<div class="bar-row"><div class="bar-lbl" title="${esc(l)}">${esc(l)}</div><div class="bar-bg"><div class="bar-fill" style="width:${max?Math.round(n/max*100):0}%;background:${color}"><span class="bar-val">${n}</span></div></div><div class="bar-count">${n}</div></div>`).join('');
 }
 
-// ══════════════════════════════════════════
-//  CLIENT FORM
-// ══════════════════════════════════════════
 function openNew(){ CID=null; document.getElementById('cl-modal-title').textContent='Nouveau client'; clearForm(); openM('ov-cl'); }
 function editById(id){ CID=id; const c=DB.find(x=>x.id===id); if(!c) return; document.getElementById('cl-modal-title').textContent='Modifier — '+c.name; fillForm(c); closeM('ov-det'); openM('ov-cl'); }
 function editCurrent(){ if(!CID) return; editById(CID); }
@@ -1058,7 +1040,7 @@ async function saveClient(){
     id:CID||uid(), name, phone:g('f-phone'),
     channel:g('f-channel'), channelOther:g('f-chother'),
     type:g('f-type'), dest:g('f-dest'),
-    startDate:g('f-start'), endDate:g('f-end'),
+    startDate:cleanDate(g('f-start')), endDate:cleanDate(g('f-end')),
     flightIn:g('f-flin'), flightOut:g('f-flout'),
     arrivalTime:g('f-arrt'), departTime:g('f-dept'),
     transferIn:g('f-trin'), transferOut:g('f-trout'), hotel:g('f-hotel'),
@@ -1066,7 +1048,7 @@ async function saveClient(){
     driver:g('f-driver'), driverPhone:g('f-dph'),
     price:g('f-price'), currency:g('f-cur'),
     advance:g('f-adv'), advanceAmount:g('f-advamt'),
-    advanceDate:g('f-advdate'), invoiceNo:g('f-inv'),
+    advanceDate:cleanDate(g('f-advdate')), invoiceNo:g('f-inv'),
     status:g('f-status'), pax:g('f-pax'), comments:g('f-comments'),
     country:guessCountry(g('f-phone')),
     createdAt:CID?(DB.find(x=>x.id===CID)?.createdAt||new Date().toISOString()):new Date().toISOString()
@@ -1086,9 +1068,6 @@ async function delClient(){
   await save();
 }
 
-// ══════════════════════════════════════════
-//  DETAIL
-// ══════════════════════════════════════════
 function openDet(id){
   CID=id; const c=DB.find(x=>x.id===id); if(!c) return;
   document.getElementById('det-title').textContent='Dossier — '+c.name;
@@ -1123,10 +1102,7 @@ function openDet(id){
   openM('ov-det');
 }
 
-// ══════════════════════════════════════════
-//  PDF
-// ══════════════════════════════════════════
-function pdfT(s){ const m={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya','А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya'}; return String(s||'').split('').map(c=>m[c]!==undefined?m[c]:c).join('').replace(/[^\x00-\x7F\u00C0-\u024F]/g,'?'); }
+function pdfT(s){ const m={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya','А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','T':'T','У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya'}; return String(s||'').split('').map(c=>m[c]!==undefined?m[c]:c).join('').replace(/[^\x00-\x7F\u00C0-\u024F]/g,'?'); }
 function sName(n){ return (n||'x').replace(/[^a-zA-Z0-9_\-]/g,'_').slice(0,30) }
 
 function pdfHdr(doc,title,ref,site=true,ls=false){
@@ -1314,9 +1290,6 @@ function genCard(c){
   toast('Carte accueil générée','success');
 }
 
-// ══════════════════════════════════════════
-//  EXPORT MENSUEL
-// ══════════════════════════════════════════
 function populateExport(){
   const ms=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   const mel=document.getElementById('exp-m');
@@ -1343,7 +1316,7 @@ function getMonthClients(){
     if(strad&&ed>=ms&&ed<=me&&sd<ms) return true;
     if(strad&&sd>=ms&&sd<=me&&ed>me) return true;
     return false;
-  }).sort((a,b)=>new Date(cleanDate(a.startDate))-new Date(cleanDate(b.startDate)));
+  }).sort((a,b)=>cleanDate(a.startDate).localeCompare(cleanDate(b.startDate)));
 }
 
 function updateExpPreview(){
@@ -1390,9 +1363,6 @@ function exportMonthPDF(){
   toast('Export mensuel généré','success');
 }
 
-// ══════════════════════════════════════════
-//  DATA
-// ══════════════════════════════════════════
 function exportJSON(){
   const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);
@@ -1410,9 +1380,6 @@ function clearAll(){
   DB=[]; renderAll(); save(); toast('Données effacées','info');
 }
 
-// ══════════════════════════════════════════
-//  MODALS
-// ══════════════════════════════════════════
 function openM(id){ document.getElementById(id).classList.add('open') }
 function closeM(id){ document.getElementById(id).classList.remove('open') }
 document.querySelectorAll('.ov').forEach(ov=>ov.addEventListener('click',e=>{ if(e.target===ov)ov.classList.remove('open'); }));
