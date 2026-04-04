@@ -675,6 +675,13 @@ function updateDate(){
   if(el) el.textContent=s;
   if(el2) el2.textContent=s;
 }
+  function updateBadges(){
+  const alerts=DB.filter(c=>{ if(c.status==='cancelled'||c.status==='completed') return false; const d=daysUntil(c.startDate); return d!==null&&d>=0&&d<=7; }).length;
+  document.getElementById('nb-alerts').textContent=alerts;
+  document.getElementById('nb-clients').textContent=DB.length;
+  document.getElementById('nb-pending').textContent=DB.filter(c=>c.status==='pending').length;
+  document.getElementById('nb-upcoming').textContent=DB.filter(c=>c.status==='confirmed'&&daysUntil(c.startDate)>=0).length;
+}
 
 function renderAll(){
   renderDashboard(); 
