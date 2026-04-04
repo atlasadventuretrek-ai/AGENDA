@@ -575,23 +575,25 @@ let calDate = new Date();
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2) }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 function getPwd(){ return localStorage.getItem(PWD_KEY)||'marokko2024' }
-function today(){ return new Date(new Date().toDateString()) }
-function cleanDate(s){
-  if(!s) return '';
-  s = String(s).trim();
-  // Already clean YYYY-MM-DD — return as-is, NO conversion
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Has T — just cut at T, ignore time and timezone completely
-  if(s.includes('T')) return s.split('T')[0];
-  // Has / — try DD/MM/YYYY or MM/DD/YYYY
-  if(s.includes('/')) {
-    const parts = s.split('/');
-    if(parts.length === 3) {
-      if(parts[2].length === 4) return parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
-    }
-  }
-  return s;
+function today() {
+  // Force l'heure de Casablanca pour comparer proprement
+  const now = new Date().toLocaleString("en-US", {timeZone: "Africa/Casablanca"});
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
+
+function daysUntil(s) {
+  s = cleanDate(s);
+  if (!s) return null;
+  const parts = s.split('-');
+  // On crée la date cible à minuit pile sans passer par le texte ISO
+  const target = new Date(parts[0], parts[1] - 1, parts[2]);
+  const current = today();
+  return Math.round((target - current) / 864e5);
+}
+
+  
 function fmtDate(s){
   s = cleanDate(s);
   if(!s) return '—';
@@ -846,11 +848,34 @@ function renderDash(){
   document.getElementById('dash-alerts').innerHTML=!ac.length?'<div class="empty"><div class="empty-ico">✓</div><div class="empty-txt">Aucun rappel urgent</div></div>':
     ac.map(c=>{ const d=daysUntil(c.startDate); return `<div class="al-item ${d<=2?'al-urgent':'al-soon'}" onclick="openDet('${c.id}')"><div class="al-dot ${d<=2?'dot-r':'dot-a'}"></div><div><div class="al-name">${esc(c.name)}</div><div class="al-det">${d===0?"Aujourd'hui !":d===1?'Demain':d+'j'} · ${tLbl(c.type)}${c.dest?' · '+esc(c.dest):''} · ${sBadge(c.status)}</div></div></div>`; }).join('');
 
-  // Upcoming
-  const uc=DB.filter(c=>c.status==='confirmed'&&daysUntil(c.startDate)>=0).sort((a,b)=>new Date(cleanDate(a.startDate))-new Date(cleanDate(b.startDate))).slice(0,6);
-  document.getElementById('dash-upcoming').innerHTML=!uc.length?'<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun départ prévu</div></div>':
-    uc.map(c=>{ const dt=new Date(cleanDate(c.startDate)+'T12:00:00'); return `<div class="up-item" onclick="openDet('${c.id}')"><div class="up-date"><div class="up-day">${dt.getDate()}</div><div class="up-month">${mName(dt.getMonth())}</div></div><div class="up-info"><div class="up-name">${esc(c.name)}</div><div class="up-sub">${tLbl(c.type)}${c.dest?' · '+esc(c.dest):''}${c.guide?' · 👤'+esc(c.guide):''}</div></div><div>${daysChip(c.startDate)}</div></div>`; }).join('');
+// Upcoming — CORRIGÉ POUR ÉVITER LE DÉCALAGE DE DATE
+  const uc = DB.filter(c => c.status === 'confirmed' && daysUntil(c.startDate) >= 0)
+    .sort((a, b) => cleanDate(a.startDate).localeCompare(cleanDate(b.startDate)))
+    .slice(0, 6);
 
+  document.getElementById('dash-upcoming').innerHTML = !uc.length ? 
+    '<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun départ prévu</div></div>' :
+    uc.map(c => {
+      // SOLUTION RADICALE : On découpe le texte "2026-04-10" directement
+      const parts = cleanDate(c.startDate).split('-');
+      const dayNum = parts[2]; // Récupère strictement le "10" écrit dans Sheet
+      const monthIdx = parseInt(parts[1]) - 1; // Index 0-11
+      const monthLabel = mName(monthIdx); // Récupère "Avr"
+
+      return `
+        <div class="up-item" onclick="openDet('${c.id}')">
+          <div class="up-date">
+            <div class="up-day">${dayNum}</div>
+            <div class="up-month">${monthLabel}</div>
+          </div>
+          <div class="up-info">
+            <div class="up-name">${esc(c.name)}</div>
+            <div class="up-sub">${tLbl(c.type)}${c.dest ? ' · ' + esc(c.dest) : ''}${c.guide ? ' · 👤' + esc(c.guide) : ''}</div>
+          </div>
+          <div>${daysChip(c.startDate)}</div>
+        </div>`;
+    }).join('');
+  
   // Pending
   const pc=DB.filter(c=>c.status==='pending').sort((a,b)=>{ const da=daysUntil(a.startDate),db=daysUntil(b.startDate); if(da===null&&db===null) return 0; if(da===null) return 1; if(db===null) return -1; return da-db; });
   document.getElementById('dash-pending').innerHTML=!pc.length?'<div class="empty"><div class="empty-ico">◎</div><div class="empty-txt">Aucun dossier en attente</div></div>':
