@@ -1330,6 +1330,7 @@ function renderCalendar() {
   if(subTitle) subTitle.textContent = mFull(month) + " " + year;
 
   let html = `<div style="display:grid; grid-template-columns:repeat(7, 1fr); background:var(--bd); gap:1px; border:1px solid var(--bd);">`;
+  
   ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d => {
     html += `<div style="background:var(--s3); padding:10px; font-size:10px; font-weight:bold; text-align:center;">${d}</div>`;
   });
@@ -1338,16 +1339,24 @@ function renderCalendar() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    // On exclut les annulés et les achevés pour garder le calendrier lisible
     const clients = DB.filter(c => c.startDate === dateStr && c.status !== 'cancelled' && c.status !== 'completed');
     
     html += `<div style="padding:5px; background:white; min-height:100px; border-bottom:1px solid var(--s3); overflow-y:auto;">
       <div style="font-family:var(--mono); font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--tx3);">${d}</div>
-      ${clients.map(c => `
-        <div style="font-size:9px; padding:3px 5px; margin-top:2px; background:var(--goldbg); color:var(--gold); border-left:3px solid var(--gold); border-radius:2px; cursor:pointer; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" 
+      ${clients.map(c => {
+        // Logique de couleur selon le statut
+        const isConfirmed = (c.status === 'confirmed');
+        const bg = isConfirmed ? 'var(--gbg)' : 'var(--goldbg)';
+        const color = isConfirmed ? 'var(--green)' : 'var(--gold)';
+        const bdr = isConfirmed ? 'var(--green)' : 'var(--gold)';
+        
+        return `
+        <div style="font-size:9px; padding:3px 5px; margin-top:2px; background:${bg}; color:${color}; border-left:3px solid ${bdr}; border-radius:2px; cursor:pointer; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" 
              onclick="openDetail('${c.id}')" title="${esc(c.name)}">
-          ${esc(c.name)}
-        </div>
-      `).join('')}
+          ${isConfirmed ? '✓ ' : ''}${esc(c.name)}
+        </div>`;
+      }).join('')}
     </div>`;
   }
   html += `</div>`;
