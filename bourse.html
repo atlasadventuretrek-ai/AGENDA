@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bourse de Casablanca — Dashboard Exécutif Live</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:#060a0f; --surface:#0d1520; --border:rgba(255,255,255,0.07);
+  --accent:#00d4aa; --accent2:#f7b731; --danger:#ff4757;
+  --muted:#4a6080; --text:#e2eaf5; --dim:#7a94b0;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;}
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:200;
+  background:rgba(6,10,15,0.96);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:62px;
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.brand-name{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;letter-spacing:.1em;text-transform:uppercase;}
+.brand-sub{color:var(--dim);font-size:10px;letter-spacing:.12em;margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:16px;}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);padding:4px 12px;border-radius:20px;font-size:10px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite;}
+.date-display{color:var(--dim);font-size:10px;}
+
+/* ── PÉRIODE SELECTOR ── */
+.period-bar{
+  background:rgba(13,21,32,.98);border-bottom:1px solid var(--border);
+  padding:10px 28px;display:flex;align-items:center;gap:12px;
+  position:sticky;top:62px;z-index:190;backdrop-filter:blur(20px);
+}
+.period-label{font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-right:4px;}
+.period-btn{
+  padding:5px 14px;border-radius:6px;border:1px solid var(--border);
+  background:transparent;color:var(--dim);cursor:pointer;
+  font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.06em;
+  transition:all .2s;
+}
+.period-btn:hover{border-color:rgba(0,212,170,.4);color:var(--accent);}
+.period-btn.active{background:rgba(0,212,170,.15);border-color:rgba(0,212,170,.4);color:var(--accent);}
+.period-info{margin-left:auto;font-size:10px;color:var(--muted);}
+.period-info span{color:var(--accent2);}
+
+/* ── LAYOUT ── */
+.container{padding:20px 28px;}
+.section-label{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:12px;display:flex;align-items:center;gap:10px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.card-header{padding:14px 16px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+.card-sub{font-size:10px;color:var(--muted);}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.grid-3-2{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:14px;}
+.mb{margin-bottom:14px;}
+.ticker-tape{margin-bottom:14px;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+
+/* ── RECOMMANDATIONS ── */
+.reco-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.reco-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;position:relative;
+}
+.reco-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.reco-card.ct::before{background:linear-gradient(90deg,#00d4aa,transparent);}
+.reco-card.mt::before{background:linear-gradient(90deg,#f7b731,transparent);}
+.reco-card.lt::before{background:linear-gradient(90deg,#4fc3f7,transparent);}
+.reco-head{padding:16px 16px 10px;border-bottom:1px solid var(--border);}
+.reco-head-title{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;letter-spacing:.08em;}
+.reco-head-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+.reco-body{padding:12px;}
+.reco-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 10px;border-radius:8px;margin-bottom:6px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  transition:background .2s;cursor:default;
+}
+.reco-item:hover{background:rgba(255,255,255,.06);}
+.reco-item:last-child{margin-bottom:0;}
+.reco-left{display:flex;flex-direction:column;gap:3px;}
+.reco-ticker{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;}
+.reco-name{font-size:10px;color:var(--muted);}
+.reco-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.reco-score{font-size:10px;color:var(--dim);}
+.score-bar{width:60px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:2px;}
+.score-fill{height:100%;border-radius:2px;}
+.signal-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;letter-spacing:.06em;}
+.signal-pill.buy{background:rgba(0,212,170,.15);color:var(--accent);border:1px solid rgba(0,212,170,.25);}
+.signal-pill.watch{background:rgba(247,183,49,.12);color:var(--accent2);border:1px solid rgba(247,183,49,.2);}
+.signal-pill.avoid{background:rgba(255,71,87,.12);color:var(--danger);border:1px solid rgba(255,71,87,.2);}
+
+.reco-detail{font-size:10px;color:var(--muted);line-height:1.5;padding:0 10px 12px;border-top:1px solid var(--border);padding-top:10px;}
+
+/* AI loader */
+.ai-loading{display:flex;align-items:center;gap:10px;padding:20px 16px;color:var(--muted);font-size:11px;}
+.ai-spinner{width:14px;height:14px;border:2px solid rgba(0,212,170,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+footer{margin-top:20px;padding:14px 28px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px;letter-spacing:.06em;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+/* Période badge dans chaque card */
+.period-badge{
+  display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;
+  font-size:9px;letter-spacing:.1em;font-weight:600;text-transform:uppercase;
+  background:rgba(0,212,170,.1);color:var(--accent);border:1px solid rgba(0,212,170,.2);
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <div>
+      <div class="brand-name">Bourse de Casablanca</div>
+      <div class="brand-sub">Dashboard Exécutif · Live TradingView</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div> Live</div>
+    <div class="date-display" id="dateLive"></div>
+  </div>
+</header>
+
+<!-- PÉRIODE SELECTOR -->
+<div class="period-bar">
+  <div class="period-label">Période</div>
+  <button class="period-btn" data-period="1W" data-tv="1W" data-mo="1W">1 Sem</button>
+  <button class="period-btn" data-period="1M" data-tv="1M" data-mo="1M">1 Mois</button>
+  <button class="period-btn active" data-period="3M" data-tv="3M" data-mo="3M">3 Mois</button>
+  <button class="period-btn" data-period="6M" data-tv="6M" data-mo="6M">6 Mois</button>
+  <button class="period-btn" data-period="1Y" data-tv="12M" data-mo="12M">1 An</button>
+  <button class="period-btn" data-period="2Y" data-tv="24M" data-mo="24M">2 Ans</button>
+  <button class="period-btn" data-period="3Y" data-tv="60M" data-mo="60M">3 Ans</button>
+  <div class="period-info">Période active : <span id="periodLabel">3 Mois</span> — Tous les graphiques se mettent à jour</div>
+</div>
+
+<div class="container">
+
+  <!-- TICKER TAPE -->
+  <div class="ticker-tape">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {"symbols":[
+        {"proName":"CASABLANCA:ATW","title":"Attijariwafa"},
+        {"proName":"CASABLANCA:IAM","title":"Maroc Telecom"},
+        {"proName":"CASABLANCA:BCP","title":"BCP"},
+        {"proName":"CASABLANCA:CIH","title":"CIH Bank"},
+        {"proName":"CASABLANCA:MNG","title":"Managem"},
+        {"proName":"CASABLANCA:HPS","title":"HPS"},
+        {"proName":"CASABLANCA:LHM","title":"Lafarge"},
+        {"proName":"CASABLANCA:CSR","title":"Cosumar"},
+        {"proName":"CASABLANCA:BOA","title":"BOA"},
+        {"proName":"CASABLANCA:WAA","title":"Wafa Assur."},
+        {"proName":"CASABLANCA:LBV","title":"Label Vie"},
+        {"proName":"CASABLANCA:ADH","title":"Douja Prom"},
+        {"proName":"CASABLANCA:AUTO","title":"Auto Hall"},
+        {"proName":"CASABLANCA:ADI","title":"Alliances"},
+        {"proName":"CASABLANCA:SID","title":"Sonasid"},
+        {"proName":"CASABLANCA:MASI","title":"MASI Index"}
+      ],"showSymbolLogo":true,"isTransparent":true,"displayMode":"adaptive","colorTheme":"dark","locale":"fr"}
+      </script>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 1: MASI + MARCHÉ ══ -->
+  <div class="section-label">Indice MASI & Vue marché</div>
+  <div class="grid-3-2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">MASI — Indice principal</div>
+        <div class="card-sub">Bourse de Casablanca · <span class="period-badge" id="badge-masi">3M</span></div>
+      </div>
+      <div id="widget-masi"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Vue marché par secteur</div>
+        <div class="card-sub"><span class="period-badge" id="badge-overview">3M</span></div>
+      </div>
+      <div id="widget-overview"></div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 2: RECOMMANDATIONS IA ══ -->
+  <div class="section-label">Recommandations — Analyse CT / MT / LT</div>
+  <div id="recoSection">
+    <div class="ai-loading">
+      <div class="ai-spinner"></div>
+      Analyse en cours selon la période sélectionnée...
+    </div>
+  </div>
+
+  <!-- ══ SECTION 3: TOP VALEURS ══ -->
+  <div class="section-label">Top valeurs — Graphiques individuels</div>
+  <div class="grid-3" id="topGrid">
+    <!-- ATW -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Attijariwafa Bank</div><div class="card-sub">ATW · Banques · <span class="period-badge" id="badge-atw">3M</span></div></div>
+      <div id="widget-atw"></div>
+    </div>
+    <!-- IAM -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Maroc Telecom</div><div class="card-sub">IAM · Télécoms · <span class="period-badge" id="badge-iam">3M</span></div></div>
+      <div id="widget-iam"></div>
+    </div>
+    <!-- MNG -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Managem</div><div class="card-sub">MNG · Mines · <span class="period-badge" id="badge-mng">3M</span></div></div>
+      <div id="widget-mng"></div>
+    </div>
+    <!-- BCP -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">BCP</div><div class="card-sub">BCP · Banques · <span class="period-badge" id="badge-bcp">3M</span></div></div>
+      <div id="widget-bcp"></div>
+    </div>
+    <!-- HPS -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">HPS</div><div class="card-sub">HPS · Technologie · <span class="period-badge" id="badge-hps">3M</span></div></div>
+      <div id="widget-hps"></div>
+    </div>
+    <!-- CIH -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">CIH Bank</div><div class="card-sub">CIH · Banques · <span class="period-badge" id="badge-cih">3M</span></div></div>
+      <div id="widget-cih"></div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 4: ANALYSE TECHNIQUE ══ -->
+  <div class="section-label">Analyse technique — Signaux RSI · MACD · Moyennes mobiles</div>
+  <div class="grid-2 mb">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Analyse technique — ATW</div><div class="card-sub"><span class="period-badge" id="badge-tech-atw">3M</span></div></div>
+      <div id="widget-tech-atw"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Analyse technique — MASI</div><div class="card-sub"><span class="period-badge" id="badge-tech-masi">3M</span></div></div>
+      <div id="widget-tech-masi"></div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 5: CHART AVANCÉ ══ -->
+  <div class="section-label">Chart professionnel interactif</div>
+  <div class="card mb">
+    <div class="card-header">
+      <div class="card-title">Chart avancé — RSI · MACD · Bollinger · Volume</div>
+      <div class="card-sub">Cliquer sur le symbole pour changer la valeur · <span class="period-badge" id="badge-advanced">3M</span></div>
+    </div>
+    <div id="widget-advanced"></div>
+  </div>
+
+  <!-- ══ SECTION 6: SCREENER ══ -->
+  <div class="section-label">Screener — Toutes les valeurs cotées</div>
+  <div class="card mb">
+    <div class="card-header">
+      <div class="card-title">Screener Bourse de Casablanca</div>
+      <div class="card-sub">Cours · Variation · Volume · Capitalisation · P/E · Signaux</div>
+    </div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-screener.js" async>
+      {"width":"100%","height":500,"defaultColumn":"overview","defaultScreen":"most_capitalized","market":"morocco","showToolbar":true,"colorTheme":"dark","locale":"fr","isTransparent":true}
+      </script>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 7: SIGNAUX 4 VALEURS ══ -->
+  <div class="section-label">Signaux — Valeurs sous surveillance</div>
+  <div class="grid-2 mb">
+    <div class="card">
+      <div class="card-header"><div class="card-title">BOA · CSR · LBV · ADI</div><div class="card-sub"><span class="period-badge" id="badge-quad">3M</span></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0" id="quadSignals"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">LHM · WAA · ADH · SID</div><div class="card-sub"><span class="period-badge" id="badge-quad2">3M</span></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0" id="quadSignals2"></div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 8: AUTRES VALEURS ══ -->
+  <div class="section-label">Autres valeurs — Lafarge · Cosumar · Label Vie · Auto Hall · Wafa · Douja · Sonasid · Alliances</div>
+  <div class="grid-3 mb" id="otherGrid">
+    <div class="card"><div class="card-header"><div class="card-title">Lafarge Maroc</div><div class="card-sub">LHM · BTP · <span class="period-badge" id="badge-lhm">3M</span></div></div><div id="widget-lhm"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Cosumar</div><div class="card-sub">CSR · Agro · <span class="period-badge" id="badge-csr">3M</span></div></div><div id="widget-csr"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Label Vie</div><div class="card-sub">LBV · Distribution · <span class="period-badge" id="badge-lbv">3M</span></div></div><div id="widget-lbv"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Wafa Assurance</div><div class="card-sub">WAA · Assurances · <span class="period-badge" id="badge-waa">3M</span></div></div><div id="widget-waa"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Douja Prom</div><div class="card-sub">ADH · Immobilier · <span class="period-badge" id="badge-adh">3M</span></div></div><div id="widget-adh"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Sonasid</div><div class="card-sub">SID · Sidérurgie · <span class="period-badge" id="badge-sid">3M</span></div></div><div id="widget-sid"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Auto Hall</div><div class="card-sub">AUTO · Automobile · <span class="period-badge" id="badge-auto">3M</span></div></div><div id="widget-auto"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Alliances Dev.</div><div class="card-sub">ADI · Immobilier · <span class="period-badge" id="badge-adi">3M</span></div></div><div id="widget-adi"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">BOA (BMCE)</div><div class="card-sub">BOA · Banques · <span class="period-badge" id="badge-boa">3M</span></div></div><div id="widget-boa"></div></div>
+  </div>
+
+</div>
+
+<footer>
+  <div>Données live fournies par TradingView · Bourse de Casablanca</div>
+  <div>Dashboard Exécutif · <span id="footerDate"></span></div>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG PÉRIODE
+// ══════════════════════════════════════════════════════════════
+const PERIODS = {
+  '1W': { label:'1 Semaine',  tv:'1W',  tvInterval:'60',  techInterval:'60' },
+  '1M': { label:'1 Mois',    tv:'1M',  tvInterval:'D',   techInterval:'D'  },
+  '3M': { label:'3 Mois',    tv:'3M',  tvInterval:'D',   techInterval:'D'  },
+  '6M': { label:'6 Mois',    tv:'6M',  tvInterval:'W',   techInterval:'W'  },
+  '1Y': { label:'1 An',      tv:'12M', tvInterval:'W',   techInterval:'W'  },
+  '2Y': { label:'2 Ans',     tv:'24M', tvInterval:'M',   techInterval:'M'  },
+  '3Y': { label:'3 Ans',     tv:'60M', tvInterval:'M',   techInterval:'M'  },
+};
+
+let currentPeriod = '3M';
+
+// Mapping période → context CT/MT/LT pour l'IA
+const PERIOD_TO_HORIZON = {
+  '1W':'CT', '1M':'CT', '3M':'CT/MT', '6M':'MT', '1Y':'MT/LT', '2Y':'LT', '3Y':'LT'
+};
+
+// ══════════════════════════════════════════════════════════════
+// DONNÉES ACTIONS (fondamentaux + tendances)
+// ══════════════════════════════════════════════════════════════
+const STOCKS_DATA = [
+  {ticker:'ATW', name:'Attijariwafa Bank', sector:'Banques',       pe:14.2, pb:1.8, div:4.1, beta:0.72, mom3m:+8.2,  mom1y:+15.3, vol:14.2, mktcap:85, analyst:'Surperformance'},
+  {ticker:'IAM', name:'Maroc Telecom',     sector:'Télécoms',      pe:17.8, pb:4.2, div:7.8, beta:0.45, mom3m:-4.1,  mom1y:-2.8,  vol:10.8, mktcap:115,analyst:'Neutre'},
+  {ticker:'BCP', name:'BCP',               sector:'Banques',       pe:12.1, pb:1.4, div:3.8, beta:0.68, mom3m:+5.6,  mom1y:+9.1,  vol:12.1, mktcap:52, analyst:'Achat'},
+  {ticker:'CIH', name:'CIH Bank',          sector:'Banques',       pe:11.4, pb:1.6, div:4.2, beta:0.81, mom3m:+12.3, mom1y:+22.1, vol:16.4, mktcap:18, analyst:'Achat'},
+  {ticker:'MNG', name:'Managem',           sector:'Mines',         pe:22.3, pb:3.1, div:1.2, beta:1.42, mom3m:+18.7, mom1y:+31.4, vol:24.8, mktcap:22, analyst:'Surperformance'},
+  {ticker:'HPS', name:'HPS',               sector:'Technologie',   pe:28.4, pb:5.2, div:0.8, beta:1.18, mom3m:+22.4, mom1y:+44.2, vol:28.4, mktcap:6,  analyst:'Achat'},
+  {ticker:'LHM', name:'Lafarge Maroc',     sector:'BTP/Ciment',    pe:18.6, pb:2.8, div:5.2, beta:0.62, mom3m:-2.8,  mom1y:+4.1,  vol:11.5, mktcap:38, analyst:'Neutre'},
+  {ticker:'CSR', name:'Cosumar',           sector:'Agroalimentaire',pe:15.2,pb:2.1, div:4.6, beta:0.58, mom3m:+6.9,  mom1y:+11.2, vol:15.2, mktcap:25, analyst:'Achat'},
+  {ticker:'BOA', name:'BOA (BMCE)',        sector:'Banques',        pe:13.4, pb:1.3, div:3.4, beta:0.74, mom3m:+2.1,  mom1y:+5.8,  vol:11.8, mktcap:30, analyst:'Neutre'},
+  {ticker:'WAA', name:'Wafa Assurance',    sector:'Assurances',     pe:16.8, pb:2.4, div:3.8, beta:0.54, mom3m:-7.8,  mom1y:-3.2,  vol:12.3, mktcap:12, analyst:'Sous-performance'},
+  {ticker:'LBV', name:'Label Vie',         sector:'Distribution',   pe:19.2, pb:2.8, div:2.1, beta:0.48, mom3m:-5.4,  mom1y:-1.8,  vol:9.8,  mktcap:14, analyst:'Neutre'},
+  {ticker:'ADH', name:'Douja Prom',        sector:'Immobilier',     pe:8.4,  pb:0.9, div:2.4, beta:1.24, mom3m:-11.2, mom1y:-18.4, vol:22.1, mktcap:11, analyst:'Sous-performance'},
+  {ticker:'AUTO',name:'Auto Hall',         sector:'Automobile',     pe:10.8, pb:1.4, div:5.8, beta:0.61, mom3m:+3.8,  mom1y:+6.2,  vol:13.7, mktcap:8,  analyst:'Achat'},
+  {ticker:'SID', name:'Sonasid',           sector:'Sidérurgie',     pe:12.4, pb:1.2, div:4.8, beta:0.88, mom3m:+4.4,  mom1y:+7.8,  vol:17.3, mktcap:9,  analyst:'Neutre'},
+  {ticker:'ADI', name:'Alliances Dev.',    sector:'Immobilier',     pe:6.2,  pb:0.6, div:0.0, beta:1.68, mom3m:-18.3, mom1y:-28.1, vol:31.2, mktcap:5,  analyst:'Vente'},
+];
+
+// ══════════════════════════════════════════════════════════════
+// SCORING & RECOMMANDATIONS
+// ══════════════════════════════════════════════════════════════
+function scoreStock(s, horizon) {
+  let score = 0;
+  // Momentum (poids selon horizon)
+  if(horizon === 'CT') score += s.mom3m * 2.0;
+  else if(horizon === 'MT') score += s.mom3m * 1.0 + s.mom1y * 0.5;
+  else score += s.mom1y * 1.5;
+
+  // Valorisation (faible PE = meilleur)
+  score += Math.max(0, (25 - s.pe)) * 0.8;
+
+  // Dividende (LT = dividende important)
+  if(horizon === 'LT') score += s.div * 3.0;
+  else score += s.div * 1.0;
+
+  // Risque/Beta (CT = faible beta mieux, LT = beta OK)
+  if(horizon === 'CT') score -= s.beta * 8;
+  else if(horizon === 'MT') score -= s.beta * 4;
+  else score -= Math.max(0, s.beta - 1) * 5;
+
+  // Volatilité (pénaliser sauf MT/LT si momentum bon)
+  score -= s.vol * 0.3;
+
+  // Analyste
+  if(s.analyst === 'Achat' || s.analyst === 'Surperformance') score += 10;
+  else if(s.analyst === 'Sous-performance' || s.analyst === 'Vente') score -= 15;
+
+  return Math.round(score * 10) / 10;
+}
+
+function getRecommendations(periodKey) {
+  const p = PERIODS[periodKey];
+  const h = PERIOD_TO_HORIZON[periodKey];
+
+  // Calculer pour chaque horizon
+  const horizons = {
+    CT: { label:'Court Terme', sub:'1 sem → 1 mois', color:'var(--accent)', cls:'ct' },
+    MT: { label:'Moyen Terme', sub:'1 → 6 mois',     color:'var(--accent2)', cls:'mt' },
+    LT: { label:'Long Terme',  sub:'1 → 3 ans',       color:'#4fc3f7',       cls:'lt' },
+  };
+
+  const results = {};
+  for(const hz of Object.keys(horizons)) {
+    const scored = STOCKS_DATA.map(s => ({...s, score: scoreStock(s, hz)}))
+      .filter(s => s.score > 0)
+      .sort((a,b) => b.score - a.score)
+      .slice(0, 5);
+    results[hz] = {stocks: scored, ...horizons[hz]};
+  }
+  return results;
+}
+
+function renderRecos(periodKey) {
+  const recos = getRecommendations(periodKey);
+  const p = PERIODS[periodKey];
+  const section = document.getElementById('recoSection');
+
+  let html = `<div class="reco-grid">`;
+
+  for(const [hz, data] of Object.entries(recos)) {
+    const maxScore = data.stocks[0]?.score || 1;
+    html += `
+    <div class="reco-card ${data.cls}">
+      <div class="reco-head">
+        <div class="reco-head-title" style="color:${data.color}">${data.label} — ${hz}</div>
+        <div class="reco-head-sub">${data.sub} · Période analysée : ${p.label}</div>
+      </div>
+      <div class="reco-body">`;
+
+    data.stocks.forEach((s, i) => {
+      const pct = Math.min(100, Math.round((s.score / maxScore) * 100));
+      const risk = s.beta > 1.2 ? 'Risque élevé' : s.beta < 0.65 ? 'Risque faible' : 'Risque modéré';
+      const riskColor = s.beta > 1.2 ? 'var(--danger)' : s.beta < 0.65 ? 'var(--accent)' : 'var(--accent2)';
+      html += `
+        <div class="reco-item">
+          <div class="reco-left">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:${data.color}">${i+1}.</div>
+              <div>
+                <div class="reco-ticker">${s.ticker}</div>
+                <div class="reco-name">${s.name}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+              <span class="signal-pill buy">ACHETER</span>
+              <span style="font-size:9px;color:${riskColor};background:rgba(255,255,255,.04);padding:2px 6px;border-radius:4px">${risk}</span>
+            </div>
+          </div>
+          <div class="reco-right">
+            <div class="reco-score" style="color:${data.color}">Score ${s.score > 0 ? '+' : ''}${s.score}</div>
+            <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${data.color}"></div></div>
+            <div style="font-size:9px;color:var(--muted);margin-top:3px">PE ${s.pe}x · Div ${s.div}%</div>
+          </div>
+        </div>`;
+    });
+
+    html += `</div>
+      <div class="reco-detail">
+        ${hz === 'CT' ? `Sélection basée sur : momentum court terme, faible bêta, signal analyste. Adapté aux prises de position rapides.` :
+          hz === 'MT' ? `Sélection basée sur : momentum 3-12 mois, valorisation P/E, dividende, tendance sectorielle.` :
+          `Sélection basée sur : croissance long terme, rendement dividende, solidité bilancielle, bêta stable.`}
+      </div>
+    </div>`;
+  }
+
+  html += `</div>`;
+  section.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// WIDGETS TRADINGVIEW
+// ══════════════════════════════════════════════════════════════
+function buildMiniWidget(containerId, symbol, dateRange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  wrapper.appendChild(inner);
+  container.appendChild(wrapper);
+
+  const script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    symbol, width:'100%', height:200, locale:'fr',
+    dateRange, colorTheme:'dark', isTransparent:true, autosize:false
+  });
+  wrapper.appendChild(script);
+}
+
+function buildMasiWidget(dateRange, interval) {
+  const container = document.getElementById('widget-masi');
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  wrapper.appendChild(inner);
+  container.appendChild(wrapper);
+
+  const script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    autosize:false, width:'100%', height:320,
+    symbol:'CASABLANCA:MASI', interval,
+    timezone:'Africa/Casablanca', theme:'dark', style:'1', locale:'fr',
+    backgroundColor:'rgba(13,21,32,0)', gridColor:'rgba(255,255,255,0.04)',
+    hide_top_toolbar:false, hide_legend:false, save_image:false,
+    range: dateRange,
+    support_host:'https://www.tradingview.com'
+  });
+  wrapper.appendChild(script);
+}
+
+function buildAdvancedWidget(dateRange, interval) {
+  const container = document.getElementById('widget-advanced');
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  wrapper.appendChild(inner);
+  container.appendChild(wrapper);
+
+  const script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    autosize:false, width:'100%', height:480,
+    symbol:'CASABLANCA:ATW', interval,
+    timezone:'Africa/Casablanca', theme:'dark', style:'1', locale:'fr',
+    backgroundColor:'rgba(13,21,32,0)', gridColor:'rgba(255,255,255,0.04)',
+    hide_top_toolbar:false, save_image:true, calendar:true,
+    range: dateRange,
+    studies:['STD;RSI','STD;MACD','STD;Bollinger_Bands','STD;Volume'],
+    support_host:'https://www.tradingview.com'
+  });
+  wrapper.appendChild(script);
+}
+
+function buildTechWidget(containerId, symbol, interval) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  wrapper.appendChild(inner);
+  container.appendChild(wrapper);
+
+  const script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    interval, width:'100%', isTransparent:true, height:340,
+    symbol, showIntervalTabs:true, displayMode:'multiple', locale:'fr', colorTheme:'dark'
+  });
+  wrapper.appendChild(script);
+}
+
+function buildTechSmall(containerId, symbol, interval, borderStyle) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  container.style.cssText = borderStyle || '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  wrapper.appendChild(inner);
+  container.appendChild(wrapper);
+
+  const script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    interval, width:'100%', isTransparent:true, height:185,
+    symbol, showIntervalTabs:false, displayMode:'single', locale:'fr', colorTheme:'dark'
+  });
+  wrapper.appendChild(script);
+}
+
+function buildOverviewWidget(dateRange) {
+  const container = document.getElementById('widget-overview');
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  wrapper.appendChild(inner);
+  container.appendChild(wrapper);
+
+  const script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    colorTheme:'dark', dateRange, showChart:true, locale:'fr',
+    width:'100%', height:320, isTransparent:true,
+    showSymbolLogo:true, showFloatingTooltip:false,
+    tabs:[
+      {title:'Maroc', symbols:[
+        {s:'CASABLANCA:MASI',d:'MASI Index'},
+        {s:'CASABLANCA:ATW', d:'Attijariwafa'},
+        {s:'CASABLANCA:IAM', d:'Maroc Telecom'},
+        {s:'CASABLANCA:BCP', d:'BCP'},
+        {s:'CASABLANCA:MNG', d:'Managem'},
+        {s:'CASABLANCA:HPS', d:'HPS'}
+      ]},
+      {title:'Banques', symbols:[
+        {s:'CASABLANCA:ATW',d:'Attijariwafa'},
+        {s:'CASABLANCA:BCP',d:'BCP'},
+        {s:'CASABLANCA:CIH',d:'CIH Bank'},
+        {s:'CASABLANCA:BOA',d:'BOA BMCE'},
+        {s:'CASABLANCA:WAA',d:'Wafa Assurance'}
+      ]},
+      {title:'Autres', symbols:[
+        {s:'CASABLANCA:MNG',d:'Managem Mines'},
+        {s:'CASABLANCA:LHM',d:'Lafarge BTP'},
+        {s:'CASABLANCA:CSR',d:'Cosumar Agro'},
+        {s:'CASABLANCA:HPS',d:'HPS Tech'},
+        {s:'CASABLANCA:LBV',d:'Label Vie'}
+      ]}
+    ]
+  });
+  wrapper.appendChild(script);
+}
+
+// Quad signals containers
+function buildQuadSignals(interval) {
+  // Quad 1
+  const q1 = document.getElementById('quadSignals');
+  q1.innerHTML = `
+    <div id="qs-boa" style="border-bottom:1px solid var(--border);border-right:1px solid var(--border)"></div>
+    <div id="qs-csr" style="border-bottom:1px solid var(--border)"></div>
+    <div id="qs-lbv" style="border-right:1px solid var(--border)"></div>
+    <div id="qs-adi"></div>`;
+  buildTechSmall('qs-boa','CASABLANCA:BOA',interval,'');
+  buildTechSmall('qs-csr','CASABLANCA:CSR',interval,'');
+  buildTechSmall('qs-lbv','CASABLANCA:LBV',interval,'');
+  buildTechSmall('qs-adi','CASABLANCA:ADI',interval,'');
+
+  // Quad 2
+  const q2 = document.getElementById('quadSignals2');
+  q2.innerHTML = `
+    <div id="qs-lhm" style="border-bottom:1px solid var(--border);border-right:1px solid var(--border)"></div>
+    <div id="qs-waa" style="border-bottom:1px solid var(--border)"></div>
+    <div id="qs-adh" style="border-right:1px solid var(--border)"></div>
+    <div id="qs-sid"></div>`;
+  buildTechSmall('qs-lhm','CASABLANCA:LHM',interval,'');
+  buildTechSmall('qs-waa','CASABLANCA:WAA',interval,'');
+  buildTechSmall('qs-adh','CASABLANCA:ADH',interval,'');
+  buildTechSmall('qs-sid','CASABLANCA:SID',interval,'');
+}
+
+// ══════════════════════════════════════════════════════════════
+// UPDATE GLOBAL — reconstruire tous les widgets
+// ══════════════════════════════════════════════════════════════
+function updateAllWidgets(periodKey) {
+  const p = PERIODS[periodKey];
+  const dr = p.tv;
+  const iv = p.tvInterval;
+  const ti = p.techInterval;
+
+  // Update badges
+  document.querySelectorAll('.period-badge').forEach(b => b.textContent = p.label);
+  document.getElementById('periodLabel').textContent = p.label;
+
+  // MASI + overview
+  buildMasiWidget(dr, iv);
+  buildOverviewWidget(dr);
+
+  // Top 6
+  buildMiniWidget('widget-atw','CASABLANCA:ATW', dr);
+  buildMiniWidget('widget-iam','CASABLANCA:IAM', dr);
+  buildMiniWidget('widget-mng','CASABLANCA:MNG', dr);
+  buildMiniWidget('widget-bcp','CASABLANCA:BCP', dr);
+  buildMiniWidget('widget-hps','CASABLANCA:HPS', dr);
+  buildMiniWidget('widget-cih','CASABLANCA:CIH', dr);
+
+  // Analyses techniques
+  buildTechWidget('widget-tech-atw','CASABLANCA:ATW', ti);
+  buildTechWidget('widget-tech-masi','CASABLANCA:MASI', ti);
+
+  // Chart avancé
+  buildAdvancedWidget(dr, iv);
+
+  // Quad signaux
+  buildQuadSignals(ti);
+
+  // Autres valeurs
+  buildMiniWidget('widget-lhm','CASABLANCA:LHM', dr);
+  buildMiniWidget('widget-csr','CASABLANCA:CSR', dr);
+  buildMiniWidget('widget-lbv','CASABLANCA:LBV', dr);
+  buildMiniWidget('widget-waa','CASABLANCA:WAA', dr);
+  buildMiniWidget('widget-adh','CASABLANCA:ADH', dr);
+  buildMiniWidget('widget-sid','CASABLANCA:SID', dr);
+  buildMiniWidget('widget-auto','CASABLANCA:AUTO', dr);
+  buildMiniWidget('widget-adi','CASABLANCA:ADI', dr);
+  buildMiniWidget('widget-boa','CASABLANCA:BOA', dr);
+
+  // Recommandations
+  renderRecos(periodKey);
+}
+
+// ══════════════════════════════════════════════════════════════
+// BOUTONS PÉRIODE
+// ══════════════════════════════════════════════════════════════
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentPeriod = this.dataset.period;
+    updateAllWidgets(currentPeriod);
+  });
+});
+
+// ── INIT ──
+const now = new Date();
+const opts = {weekday:'long', day:'2-digit', month:'long', year:'numeric'};
+document.getElementById('dateLive').textContent = now.toLocaleDateString('fr-FR', opts);
+document.getElementById('footerDate').textContent = now.toLocaleDateString('fr-FR', opts);
+
+// Lancer avec période par défaut (3M)
+updateAllWidgets('3M');
+</script>
+</body>
+</html>
