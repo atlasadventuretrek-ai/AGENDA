@@ -420,8 +420,9 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
         <div class="card">
           <div class="card-t">🔐 Mot de passe</div>
           <div style="display:grid;gap:10px">
-            <div class="fg"><label>Nouveau mot de passe</label><input type="password" id="new-pwd" placeholder="Minimum 4 caractères"></div>
-            <div class="fg"><label>Confirmer</label><input type="password" id="new-pwd2" placeholder="Répéter"></div>
+            <div class="fg"><label>Mot de passe actuel</label><input type="password" id="current-pwd" placeholder="Mot de passe actuel" autocomplete="current-password"></div>
+            <div class="fg"><label>Nouveau mot de passe</label><input type="password" id="new-pwd" placeholder="Minimum 4 caractères" autocomplete="new-password"></div>
+            <div class="fg"><label>Confirmer le nouveau mot de passe</label><input type="password" id="new-pwd2" placeholder="Répéter le nouveau mot de passe" autocomplete="new-password"></div>
           </div>
           <div class="form-actions"><button class="btn btn-gold" onclick="changePwd()">Enregistrer</button></div>
         </div>
@@ -554,7 +555,6 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 //  CONFIG & STATE
 // ══════════════════════════════════════════
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyYtpmiY4g2w9yw-Yd6QLBbkLaaZ1KJrgONea8Q95QqJlVZVGxXTq6n7CmpwPVVnl2ISw/exec?sheet=Ventes';
-const PWD_KEY = 'gm_pwd_v3';
 const COLS = ['id','name','phone','channel','channelOther','type','dest','startDate','endDate','flightIn','flightOut','arrivalTime','departTime','transferIn','transferOut','hotel','guide','guidePhone','driver','driverPhone','price','currency','advance','advanceAmount','advanceDate','invoiceNo','status','pax','comments','country','createdAt'];
 
 let DB = [];
@@ -567,29 +567,63 @@ let _syncing = false;
 // ══════════════════════════════════════════
 //  AUTH & SYNC
 // ══════════════════════════════════════════
-function getPwd(){ return localStorage.getItem(PWD_KEY)||'0000' }
-
-function unlock(){
-  if(document.getElementById('lk-input').value===getPwd()){
-    document.getElementById('lock').style.display='none';
-    document.getElementById('app').style.display='flex';
-    init();
-  } else {
-    document.getElementById('lk-err').style.display='block';
-    document.getElementById('lk-input').value='';
-    setTimeout(()=>document.getElementById('lk-err').style.display='none',2000);
-  }
+async function passwordRequest(payload){
+  const response = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+  const raw = await response.text();
+  let result;
+  try { result = JSON.parse(raw); }
+  catch (_) { throw new Error('Réponse serveur invalide. Vérifie le déploiement Web Apps Script.'); }
+  if (!response.ok || !result.ok) throw new Error(result.error || 'Erreur du serveur.');
+  return result;
 }
 
-function changePwd(){
-  const a=document.getElementById('new-pwd').value;
-  const b=document.getElementById('new-pwd2').value;
-  if(a.length<4){toast('Minimum 4 caractères','error');return}
-  if(a!==b){toast('Mots de passe différents','error');return}
-  localStorage.setItem(PWD_KEY,a);
-  toast('Mot de passe mis à jour','success');
-  document.getElementById('new-pwd').value='';
-  document.getElementById('new-pwd2').value='';
+async function unlock(){
+  const input = document.getElementById('lk-input');
+  const error = document.getElementById('lk-err');
+  const button = document.querySelector('#lock .lk-btn');
+  const password = input.value;
+  if (!password) { error.textContent = 'Entre ton mot de passe.'; error.style.display = 'block'; return; }
+  if (button) button.disabled = true;
+  error.style.display = 'none';
+  try {
+    const result = await passwordRequest({action:'verifyPwd', password});
+    if (result.valid) {
+      document.getElementById('lock').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      input.value = '';
+      await init();
+    } else {
+      error.textContent = 'Mot de passe incorrect';
+      error.style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  } catch (e) {
+    error.textContent = e.message || 'Serveur inaccessible. Vérifie le déploiement.';
+    error.style.display = 'block';
+    console.error('Erreur authentification:', e);
+  } finally { if (button) button.disabled = false; }
+}
+
+async function changePwd(){
+  const current = document.getElementById('current-pwd').value;
+  const a = document.getElementById('new-pwd').value;
+  const b = document.getElementById('new-pwd2').value;
+  if (!current) { toast('Entre le mot de passe actuel.', 'error'); return; }
+  if (a.length < 4) { toast('Minimum 4 caractères.', 'error'); return; }
+  if (a !== b) { toast('Mots de passe différents.', 'error'); return; }
+  try {
+    await passwordRequest({action:'changePwd', currentPassword:current, newPassword:a});
+    ['current-pwd','new-pwd','new-pwd2'].forEach(id => document.getElementById(id).value = '');
+    toast('Mot de passe enregistré sur le serveur.', 'success');
+  } catch (e) {
+    toast(e.message || 'Impossible de modifier le mot de passe.', 'error');
+    console.error('Erreur changement mot de passe:', e);
+  }
 }
 
 function objToRow(c){ return COLS.map(k=>String(c[k]||'')) }
